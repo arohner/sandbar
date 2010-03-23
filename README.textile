@@ -1,6 +1,6 @@
 h1. Sandbar
 
-Sandbar is a web application library built on top of Compojure. It contains code to help with: 
+Sandbar is a library for web applications built on top of Compojure. It contains code to help with: 
 
 * scaling server side state
 * tables which may be filtered, sorted and paged
@@ -8,25 +8,21 @@ Sandbar is a web application library built on top of Compojure. It contains code
 * authorization and authentication
 * user management
 
-The project contains the library code as well a reference project which uses the library.
-
-This is the very beginning of this project. Things will change rapidly and be ugly for a while. Input is welcome.
+The project contains the library code as well a reference application which uses the library.
 
 h2. Overview and motivation
 
 The goal of this project is to create a library that will allow Clojure developers to create useful web applications with the minimum amount of code. I want to see how small the minimum can be.
 
-There will be no code generation or templates, this is not a framework. You will write all of code that exists in your project using the full power of Clojure. Everything else will be in a reusable library. You will also not have to use everything. You may use only the parts you like and forget the rest.
-
 More details later...
 
 h2. Running the reference project
 
-The reference project is an idea database which demonstrates how to use the sandbar libraries.
+The reference application demonstrates how to use the sandbar libraries.
 
-The reference application currently works with MySQL.
+TODO: more detail
 
-Follow these steps to run the web app:
+To run the reference application, follow these steps:
 
 # Install Leiningen
 # Clone this repository
@@ -43,6 +39,8 @@ Follow these steps to run the web app:
 TODO: Test and simplify the above steps
 
 h2. Road map
+
+This is the very beginning of this project. Things will change rapidly and be ugly for a while. Input is welcome.
 
 h3. Authentication and Authorization
 
