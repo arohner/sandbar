@@ -23,48 +23,60 @@
       #(.endsWith (:uri %) ".js") :any
       #".*"                       [#{:admin :user} :nossl]])
 
+(defn create-request
+  ([scheme server uri] (create-request scheme server uri ""))
+  ([scheme server uri query]
+     (let [port (if (= scheme :http) 8080 8443)]
+       (create-request scheme server uri port query)))
+  ([scheme server uri port query]
+     {:uri uri
+      :scheme (keyword scheme)
+      :query-string query
+      :server-name server
+      :server-port port}))
+
+(defn response-301 [url]
+  {:status 301 :headers {"Location" url}})
+
 (deftest test-with-secure-channel
   (binding [app-context (atom "")]
     (t "check channel security"
        (binding [session (atom {})]
          (t "when scheme is http and should be https"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
-                    {:uri "/admin/page" :scheme :http
-                     :headers {"host" "host:8080"} })
-                   {:status 301
-                    :headers {"Location" "https://host:8443/admin/page"}})))
+                    (create-request :http "host" "/admin/page"))
+                   (response-301 "https://host:8443/admin/page"))))
          (t "when scheme is https and should be https"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
-                    {:uri "/admin/page" :scheme :https
-                     :headers {"host" "host:8443"} })
+                    (create-request :https "host" "/admin/page"))
                    "/admin/page")))
          (t "when scheme is http and should be http"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
-                    {:uri "/standard-page" :scheme :http
-                     :headers {"host" "host:8080"} })
+                    (create-request :http "host" "/standard-page"))
                    "/standard-page")))
          (t "when scheme is https and should be http"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
-                    {:uri "/standard-page" :scheme :https
-                     :headers {"host" "host:8443"} })
-                   {:status 301
-                    :headers {"Location" "http://host:8080/standard-page"}})))
+                    (create-request :https "host" "/standard-page"))
+                   (response-301 "http://host:8080/standard-page"))))
          (t "when ssl configured in a vector with a set"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
-                    {:uri "/download/page" :scheme :http
-                     :headers {"host" "host:8080"} })
-                   {:status 301
-                    :headers {"Location" "https://host:8443/download/page"}})))
-         (t "when ssl configured by itself"
+                    (create-request :http "host" "/download/page"))
+                   (response-301 "https://host:8443/download/page"))))
+         (t "when ssl is configured by itself"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
-                    {:uri "/secure/page" :scheme :http
-                     :headers {"host" "host:8080"} })
-                   {:status 301
-                    :headers {"Location" "https://host:8443/secure/page"}})))
+                    (create-request :http "host" "/secure/page"))
+                   (response-301 "https://host:8443/secure/page"))))
+         (t "when http -> https with request parameters"
+            (is (= ((with-secure-channel :uri test-security-config 8080 8443)
+                    (create-request :http "host" "/admin/p" "id=1&n=h"))
+                   (response-301 "https://host:8443/admin/p?id=1&n=h"))))
+         (t "when https -> http with request parameters"
+            (is (= ((with-secure-channel :uri test-security-config 8080 8443)
+                    (create-request :https "host" "/test.js" "load=x"))
+                   (response-301 "http://host:8080/test.js?load=x"))))
          (t "when no ssl config falls through to catch all"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
-                    {:uri "/test.js" :scheme :http
-                     :headers {"host" "host:8080"}})
+                    (create-request :http "host" "/test.js"))
                    "/test.js")))))))
  
 (deftest test-required-roles

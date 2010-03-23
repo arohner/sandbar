@@ -97,17 +97,20 @@
 (defn redirect-to-permission-denied [uri-prefix]
   (redirect-template (str uri-prefix "/permission-denied")))
 
-(defn host-from-request [request]
-  (first (re-split #":" ((-> request :headers) "host"))))
+(defn params-str [request]
+  (let [p (:query-string request)]
+    (if (not (empty? p)) (str "?" p) "")))
 
 (defn to-https [request ssl-port]
-  (let [host (host-from-request request)]
-    (str "https://" host ":" ssl-port (:uri request))))
+  (let [host (:server-name request)]
+    (str "https://" host ":" ssl-port (:uri request)
+         (params-str request))))
 
 (defn to-http [request port]
-  (let [host (host-from-request request)
+  (let [host (:server-name request)
         port (if (= port 80) "" (str ":" port))]
-    (str "http://" host port (:uri request))))
+    (str "http://" host port (:uri request)
+         (params-str request))))
 
 (defn filter-channel-config [config]
   (map #(vector (first %) (if (vector? (last %))
@@ -325,7 +328,6 @@
                               " is required."))))))
 
 (defn login-page [props request]
-  (println request)
   (login-form
    (:uri request) "Login"
    (form-layout-grid [1 1]

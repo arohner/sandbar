@@ -26,6 +26,7 @@ To run the reference application, follow these steps:
 
 # Create a MySQL database on localhost named idea_db
 # Create a MySQL user named idea_user@localhost with password 123456789
+# Give the above user all privileges on the idea_db database.
 # "Install Leiningen":http://github.com/technomancy/leiningen
 # Execute the following commands:
 
@@ -55,6 +56,8 @@ Log in with one of these accounts and take it for a spin. The next step would be
 h2. Road map
 
 This is the very beginning of this project. Things will change rapidly and be ugly for a while. Input is welcome.
+
+The reference application is currently easiest to get running with MySQL. Make it use Derby by default so that it will be easier for others to test drive.
 
 h3. Scaling server side state
 
