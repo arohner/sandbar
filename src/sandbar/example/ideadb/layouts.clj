@@ -21,7 +21,7 @@
    [:html
     [:head
      [:meta {:http-equiv "X-UA-Compatible" :content "IE=EmulateIE7"}]
-     [:title (str "Idea Hopper - " (capitalize title))]
+     [:title (str "Idea Database - " (capitalize title))]
      (icon "icon.png")
      (stylesheet "ideadb.css")]
     [:body
