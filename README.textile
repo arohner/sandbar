@@ -20,8 +20,6 @@ h2. Running the reference application
 
 The reference application demonstrates how to use the sandbar libraries.
 
-TODO: more detail
-
 To run the reference application, follow these steps:
 
 # Create a MySQL database on localhost named idea_db
@@ -73,7 +71,7 @@ h3. Scaling server side state
 
 When server side state is needed by any part of the library it will not use Compojure's session management. A session interface will be included in the library. For small applications that don't need to scale, the session is implemented as an in-process atom. When you need to start scaling you can switch implementations to client-server based sessions. This will have the same interface as the in-process sessions but state will be stored in another process or on another machine. This allows you to have sessions that will scale when you need them to without having to use 'sticky' sessions or put transient session state in your system of record.
 
-The client-server model will have a very simple interface and be backed by "fleetdb":http://github.com/mmcgrana/fleetdb.
+The client-server model will have a very simple interface and be backed by "FleetDB":http://github.com/mmcgrana/fleetdb.
 
 h3. Tables which may be filtered, sorted and paged
 
