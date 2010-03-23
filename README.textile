@@ -26,7 +26,7 @@ To run the reference application, follow these steps:
 
 # Create a MySQL database on localhost named idea_db
 # Create a MySQL user named idea_user@localhost with password 123456789
-# "Install Leiningen" :http://github.com/technomancy/leiningen
+# "Install Leiningen":http://github.com/technomancy/leiningen
 # execute the following commands:
 
 <pre>
