@@ -1,0 +1,9 @@
+# ignore temp files
+*.clj~
+
+# ignore output
+out/
+classes/
+
+# ignore libraries
+lib/

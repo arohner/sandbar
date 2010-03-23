@@ -1,0 +1,70 @@
+h1. Sandbar
+
+Sandbar is a web application library built on top of Compojure. It
+contains code to help with: 
+
+* scaling server side state
+* tables which may be filtered, sorted and paged
+* form layout, validation and error reporting
+* authorization and authentication
+* user management
+
+The project contains the library code as well a reference project
+which uses the library.
+
+This is the very beginning of this project. Things will change rapidly
+and be ugly for a while. Input is welcome.
+
+h2. Overview and motivation
+
+The goal of this project is to create a library that will allow
+Clojure developers to create useful web applications with the minimum
+amount of code. I want to see how small the minimum can be.
+
+There will be no code generation or templates, this is not a
+framework. You will write all of code that exists in your project
+using the full power of Clojure. Everything else will be in a reusable 
+library. You will also not have to use everything. You may use only
+the parts you like and forget the rest.
+
+More details later...
+
+h2. Running the reference project
+
+The reference project is an idea database which demonstrates how to
+use the sandbar libraries.
+
+The reference application currently works with MySQL.
+
+Follow these steps to run the web app:
+
+# Install Leiningen
+# Clone this repository
+# Use lein deps to get the project dependencies
+# Create a MySQL database named idea_db
+# Create a MySQL user named idea_user@localhost with password 123456789
+# Start a repl with lein repl
+# (load-file "src/sandbar/example/ideadb/config.clj")
+# (create-tables)
+# (load-file "src/sandbar/user_tables_mysql.clj")
+# (create-tables)
+# (load-file "src/sandbar/example/ideadb/app_development.clj")
+
+TODO: Test and simplify the above steps
+
+h2. Road map
+
+h3. Authentication and Authorization
+
+* Use SHA-256 and use Compojure's security functions.
+* Improve error handling when something goes wrong at the db level. Catch exceptions and display error messages.
+* Should be able to configure a default login redirect page.
+
+h3. A kind of wiki
+
+More information later...
+
+h3. Solr interface
+
+More information later...
+

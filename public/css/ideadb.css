@@ -1,0 +1,235 @@
+html, body {
+ font-family: Verdana, Arial, Helvetica, sans-serif;
+ font-size: 12px;
+ background-color: #4D4D4D;
+}
+
+table.list {
+ border: 1px solid #ccc;
+ margin-top: 10px;
+ margin-size: 10px;
+ font-size: 11px;
+}
+
+table.list th {
+ font-family: Arial, Helvetica, sans-serif;
+ background: #EDECEB;
+ color: #434A4C;
+ padding: 6px;
+ border: 1px solid #ccc;
+ font-size: 11px;
+ text-align: left;
+}
+
+table.list th a, table.list th a:visited {
+ background-color: transparent;
+ color: #434A4C;
+ text-decoration: none;
+}
+
+table.list th img {
+ vertical-align: middle;
+}
+
+table.list td {
+ vertical-align: top;
+ padding: 3px
+}
+
+tr.odd {
+  background: #e8ecf5;
+  border-top: 1px solid #C0C0C0;
+}
+
+tr.even {
+ background: #ffffff;
+}
+
+div#form-page-header {
+ height: 60px;
+ color: #b2b2b2;
+}
+
+div.form {
+}
+
+div.form form {
+ margin: 10px;
+ margin-top: 20px;
+ font-family: Arial, Helvetica, sans-serif;
+ font-size: 12px;
+}
+
+div.form div.form-header {
+ padding: 3px;
+ background: #e8ecf5 url(../images/form_blue_edit.png) no-repeat 4px 4px;
+ border: 1px solid #777788;
+ margin-bottom: 10px;
+ padding-left: 30px;
+}
+
+div.form div.form-header table {
+ width: 100%;
+}
+
+div.form span.form-title {
+ font-family: Arial, Verdana, Arial, Helvetica, sans-serif;
+ font-size: 18px;
+ font-weight: bold;
+ height: 40px;
+ vertical-align: top;
+ color: #3f4c6b;
+}
+
+div.form-header span.header-buttons {
+ text-align: right;
+}
+
+div.form div.form-footer {
+ background: #e8ecf5;
+ padding: 5px;
+ border: 1px solid #777788;
+ margin-top: 10px;
+}
+
+div.form td {
+ padding-left: 5px;
+ color: #666;
+}
+
+div.form div.error-message {
+ height: 24px;
+ padding-left: 24px;
+ background: url(../images/warning.png) no-repeat 4px 0px;
+ color: red;
+ vertical-align: bottom;
+}
+
+div.form div.field-label {
+ padding-top: 3px;
+ margin-bottom: 5px;
+ font-weight: bold;
+}
+
+div.form span.field-label {
+ padding-top: 3px;
+ font-weight: bold;
+}
+
+div.form div.field-label span.required {
+ color: orange;
+}
+
+#rounded-border-content {
+  background-color: #ffffff;
+}
+
+.border-top {background: url(../images/border_top.gif) 0 0 repeat-x}
+.border-bottom {background: url(../images/border_bottom.gif) 0 100% repeat-x}
+.border-left {background: url(../images/border_left.gif) 0 0 repeat-y}
+.border-right {background: url(../images/border_right.gif) 100% 0 repeat-y}
+
+.border-bottom-left-corner {
+  background: url(../images/border_bottom_left_corner.gif) 0 100% no-repeat;
+}
+
+.border-bottom-right-corner {
+  background: url(../images/border_bottom_right_corner.gif) 100% 100% no-repeat;
+}
+
+.border-top-left-corner {
+  background: url(../images/border_top_left_corner.gif) 0 0 no-repeat;
+}
+
+.border-top-right-corner {
+  background: url(../images/border_top_right_corner.gif) 100% 0 no-repeat;
+  padding:10px;
+}
+
+#footer {
+ padding: 10px;
+ text-align: center;
+ color: #b2b2b2;
+ font-size: 11px;
+ margin-bottom: 30px;
+}
+
+#footer a {
+ font-weight: bold;
+ color: #b2b2b2;
+ font-size: 11px;
+}
+ 
+div#page {
+ padding-top: 10px;
+ background: url(../images/idea_hopper_icon.png) no-repeat 0 0;
+}
+
+div#welcome-message {
+ font-family: Arial, Helvetica, sans-serif;
+ font-weight: bold;
+ color: #666;
+}
+
+div.error, div.message, div.warning, div.help {
+ background-color: #ffffcc;
+ border: 1px solid #ccc;
+ color: #666;
+ font-family: Arial, Helvetica, sans-serif;
+ font-weight: bold;
+ margin: 10px auto;
+ padding: 5px;
+ text-align: left;
+ vertical-align: bottom;
+}
+
+/* use a different color for the errors */
+div.error {
+ background: #ffffcc url(../images/error.png) no-repeat 3px 3px;
+ padding-left: 22px;
+ border: 1px solid red;
+}
+
+div.warning {
+ background: #ffffcc url(../images/warning.png) no-repeat 3px 3px;
+ padding-left: 22px;
+ border: 1px solid yellow;
+}
+
+div.message {
+ background: #ffffcc url(../images/about.png) no-repeat 3px 3px;
+ padding-left: 22px;
+}
+
+div.help {
+ background: #ffffcc url(../images/help.png) no-repeat 3px 3px;
+ padding-left: 22px;
+}
+
+div.filter-and-sort-controls {
+ padding-top: 4px;
+ padding-left: 10px;
+ color: #666;
+}
+
+div#idea-actions {
+ height: 60px;
+}
+
+div.form span.group-title {
+ position: relative;
+ left: 15px;
+ top: 8px;
+ font-weight: bold;
+ background: white;
+}
+
+div.form div.group {
+ border: 1px solid #ccc;
+ width: 96%;
+ padding: 10px;
+}
+
+div.form div.group-checkbox {
+ margin: 10px;
+}
