@@ -6,7 +6,7 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.example.ideadb.app_development
+(ns sandbar.example.ideadb.app
   (:use [compojure.control :only (decorate)]
         (compojure.http [routes :only (defroutes GET ANY)]
                         [middleware :only (with-context)]
@@ -21,12 +21,16 @@
          [admin_module :only (admin-module-routes)]
          [layouts :only (main-layout)])))
 
+;; Add public and * here because we may want to deploy in war and have
+;; the container serve these resources.
 (defroutes development-routes
   user-module-routes
   admin-module-routes
   (GET "/public/*" (or (serve-file (params :*)) :next))
   (ANY "*" (main-layout "404" request (page-not-found-404))))
 
+;; simplify routes - this is weird because of java integration
+;; required by the original project.
 (def security-config
      [#"/admin.*"                   [:admin :ssl] 
       #"/idea/edit.*"               [:admin :ssl] 
@@ -37,6 +41,7 @@
       #".*.css|.*.js|.*.png|.*.gif" :any 
       #".*"                         [#{:admin :user} :nossl]])
 
+;; may be able to move with-session above with-secure-channel.
 (decorate development-routes
           (with-context @app-context)
           (with-db-configured)

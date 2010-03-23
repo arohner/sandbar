@@ -14,9 +14,9 @@ h2. Overview and motivation
 
 The goal of this project is to create a library that will allow Clojure developers to create useful web applications with the minimum amount of code. I want to see how small the minimum can be.
 
-More details later...
+This is not a framework so it doesn't tell you how to work. It provides features that you might need as libraries. If you find something here that is useful to you, then use it. You may safely ignore the rest.
 
-h2. Running the reference project
+h2. Running the reference application
 
 The reference application demonstrates how to use the sandbar libraries.
 
@@ -24,19 +24,32 @@ TODO: more detail
 
 To run the reference application, follow these steps:
 
-# Install Leiningen
-# Clone this repository
-# Use lein deps to get the project dependencies
-# Create a MySQL database named idea_db
+# Create a MySQL database on localhost named idea_db
 # Create a MySQL user named idea_user@localhost with password 123456789
-# Start a repl with lein repl
-# (load-file "src/sandbar/example/ideadb/config.clj")
-# (create-tables)
-# (load-file "src/sandbar/user_tables_mysql.clj")
-# (create-tables)
-# (load-file "src/sandbar/example/ideadb/app_development.clj")
+# "Install Leiningen" :http://github.com/technomancy/leiningen
+# execute the following commands:
 
-TODO: Test and simplify the above steps
+<pre>
+	<code> 
+git clone git://github.com/brentonashworth/sandbar.git
+cd sandbar
+lein deps
+lein repl
+(load-file "src/testdrive.clj")
+	</code>
+</pre>
+
+You may now open a browser and go to http://localhost:8080/ideadb/.
+
+There are two user accounts:
+
+username: admin-user
+password: admin
+
+username: normal-user
+password: password
+
+Log in with one of these accounts and take it for a spin. The next step would be to take a look at the code and tinker with it in your development environment of choice. Start with src/sandbar/example/ideadb/app.clj.
 
 h2. Road map
 
