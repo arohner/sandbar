@@ -30,16 +30,14 @@ To run the reference application, follow these steps:
 # "Install Leiningen":http://github.com/technomancy/leiningen
 # Execute the following commands:
 
-<pre>
-	<code> 
+<pre><code> 
 git clone git://github.com/brentonashworth/sandbar.git
 cd sandbar
 lein deps
 lein test
 lein repl
 (load-file "src/testdrive.clj")
-	</code>
-</pre>
+</code></pre>
 
 You may now open a browser and go to http://localhost:8080/ideadb/.
 
@@ -82,5 +80,11 @@ h3. Tables which may be filtered, sorted and paged
 h3. Form layout, validation and error reporting
 
 h3. User management
+
+h2. License
+
+Copyright (C) 2010 Brenton Ashworth
+
+Distributed under the Eclipse Public License, the same as Clojure uses. See the file COPYING.
 
 
