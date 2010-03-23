@@ -53,11 +53,23 @@ password: password
 
 Log in with one of these accounts and take it for a spin. The next step would be to take a look at the code and tinker with it in your development environment of choice. Start with src/sandbar/example/ideadb/app.clj.
 
+h2. Features
+
+This is the very beginning of this project. Much of the code is a mess at this point and the API is shifting. As features become more complete I will add documentation for them here. The main focus in now on authentication and authorization as I think this is the first feature that others may want to use.
+
+h3. Authentication and Authorization
+
+See src/sandbar/example/ideadb/app.clj and src/sandbar/auth.clj
+
+* Work on API. How can it be easily extended.
+* Use SHA-256
+* Use Compojure's security functions.
+* Improve error handling when something goes wrong at the db level. Catch exceptions and display error messages.
+* Should be able to configure a default login redirect page. For when a user logs in but there is no redirect page in the session.
+
 h2. Road map
 
-This is the very beginning of this project. Things will change rapidly and be ugly for a while. Input is welcome.
-
-The reference application is currently easiest to get running with MySQL. Make it use Derby by default so that it will be easier for others to test drive.
+The reference application is currently easiest to get running with MySQL. I plan to change this to use Derby by default so that it will be easier for others to test drive.
 
 h3. Scaling server side state
 
@@ -65,17 +77,10 @@ When server side state is needed by any part of the library it will not use Comp
 
 The client-server model will have a very simple interface and be backed by "fleetdb":http://github.com/mmcgrana/fleetdb.
 
-h3. Authentication and Authorization
+h3. Tables which may be filtered, sorted and paged
 
-* Use SHA-256 and use Compojure's security functions.
-* Improve error handling when something goes wrong at the db level. Catch exceptions and display error messages.
-* Should be able to configure a default login redirect page.
+h3. Form layout, validation and error reporting
 
-h3. A kind of wiki
+h3. User management
 
-More information later...
-
-h3. Solr interface
-
-More information later...
 

@@ -12,9 +12,9 @@
                         [helpers :only (redirect-to)]
                         [session :only (flash-assoc)]]
         (sandbar library
-                    [security :only (current-username
-                                     current-user-roles
-                                     any-role-granted?)])
+                    [auth :only (current-username
+                                 current-user-roles
+                                 any-role-granted?)])
         (sandbar.example.ideadb
          [layouts :only (main-layout list-layout form-layout)]
          [model])))

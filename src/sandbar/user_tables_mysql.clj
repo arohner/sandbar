@@ -7,7 +7,7 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.user_tables_mysql
-  (:use (sandbar library security)
+  (:use (sandbar library auth)
         [sandbar.database :as database]))
 
 ;; Create user tables in mysql. To create these tables, load this file

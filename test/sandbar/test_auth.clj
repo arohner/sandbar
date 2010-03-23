@@ -6,9 +6,9 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.test_security
+(ns sandbar.test_auth
   (:use [clojure.test]
-        (sandbar library security)
+        (sandbar library auth)
         [sandbar.test :only (t)]))
 
 ;; you have not tested all of these setting since changeing this.
@@ -35,9 +35,6 @@
       :server-name server
       :server-port port}))
 
-(defn response-301 [url]
-  {:status 301 :headers {"Location" url}})
-
 (deftest test-with-secure-channel
   (binding [app-context (atom "")]
     (t "check channel security"
@@ -45,7 +42,7 @@
          (t "when scheme is http and should be https"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
                     (create-request :http "host" "/admin/page"))
-                   (response-301 "https://host:8443/admin/page"))))
+                   (redirect-301 "https://host:8443/admin/page"))))
          (t "when scheme is https and should be https"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
                     (create-request :https "host" "/admin/page"))
@@ -57,23 +54,23 @@
          (t "when scheme is https and should be http"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
                     (create-request :https "host" "/standard-page"))
-                   (response-301 "http://host:8080/standard-page"))))
+                   (redirect-301 "http://host:8080/standard-page"))))
          (t "when ssl configured in a vector with a set"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
                     (create-request :http "host" "/download/page"))
-                   (response-301 "https://host:8443/download/page"))))
+                   (redirect-301 "https://host:8443/download/page"))))
          (t "when ssl is configured by itself"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
                     (create-request :http "host" "/secure/page"))
-                   (response-301 "https://host:8443/secure/page"))))
+                   (redirect-301 "https://host:8443/secure/page"))))
          (t "when http -> https with request parameters"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
                     (create-request :http "host" "/admin/p" "id=1&n=h"))
-                   (response-301 "https://host:8443/admin/p?id=1&n=h"))))
+                   (redirect-301 "https://host:8443/admin/p?id=1&n=h"))))
          (t "when https -> http with request parameters"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
                     (create-request :https "host" "/test.js" "load=x"))
-                   (response-301 "http://host:8080/test.js?load=x"))))
+                   (redirect-301 "http://host:8080/test.js?load=x"))))
          (t "when no ssl config falls through to catch all"
             (is (= ((with-secure-channel :uri test-security-config 8080 8443)
                     (create-request :http "host" "/test.js"))
@@ -204,7 +201,7 @@
             (let [result ((with-security :uri test-security-config)
                           {:session {:id "x"} :uri "/admin/page"})]
               (is (= result
-                     (redirect-template "/login")))
+                     (redirect-302 "/login")))
               (is (= (-> @session :x :auth-redirect-uri)
                      "/admin/page"))))
          (t "allow access when auth is not required"
@@ -216,29 +213,11 @@
          (t "redirect to permission denied when valid user without role"
             (is (= ((with-security :uri test-security-config)
                     {:session {:id "x"} :uri "/admin/page"})
-                   (redirect-template "/permission-denied"))))
+                   (redirect-302 "/permission-denied"))))
          (t "allow access when user is in correct role"
             (is (= ((with-security :uri test-security-config)
                     {:session {:id "x"} :uri "/some/page"})
                    "/some/page")))))))
-
-(deftest test-secure-user
-  (t "secure the user's password"
-     (t "when the old user into in nil"
-        (let [u (secure-user {:password "test"} nil)]
-          (is (= (count u) 2))
-          (is (not (= (:password u) "test")))
-          (is (= (hash-password "test" (:salt u)) (:password u)))))
-     (t "when the password has not changed"
-        (let [u (secure-user {:password "jljuy"} {:password "jljuy"})]
-          (is (= (:password u) "jljuy"))))
-     (t "when the old user is not nil and the password has changed"
-        (let [u (secure-user {:password "test"} {:password "jkluy"
-                                                 :salt "jhuytrewswdq"})]
-          (is (= (count u) 2))
-          (is (= (:salt u) "jhuytrewswdq"))
-          (is (not (= (:password u) "test")))
-          (is (= (hash-password "test" "jhuytrewswdq") (:password u)))))))
 
 (defn test-login-load-fn
   ([k] (test-login-load-fn k {} {}))

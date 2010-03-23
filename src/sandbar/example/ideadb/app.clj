@@ -15,7 +15,7 @@
                         [session :only (with-session)])
         [compojure.server.jetty :only (run-server)]
         (sandbar [library :only (page-not-found-404 app-context)]
-                 security)
+                 auth)
         (sandbar.example.ideadb
          [user_module :only (user-module-routes with-db-configured)]
          [admin_module :only (admin-module-routes)]

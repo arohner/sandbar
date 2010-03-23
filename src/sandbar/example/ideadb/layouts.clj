@@ -10,9 +10,9 @@
   (:use [compojure.html]
         [compojure.str-utils :only (capitalize)]
         [sandbar.library]
-        (sandbar [security :only (current-user
-                                     current-username
-                                     any-role-granted?)])
+        (sandbar [auth :only (current-user
+                              current-username
+                              any-role-granted?)])
         [sandbar.example.ideadb.model]))
 
 (defn base-layout [title header request & body]

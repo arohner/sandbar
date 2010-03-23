@@ -12,7 +12,7 @@
         [compojure.http [routes :only (defroutes GET POST)]
                         [helpers :only (redirect-to)]
                         [session :only (flash-assoc)]]
-        (sandbar library security)
+        (sandbar library auth userui)
         (sandbar.example.ideadb
          [layouts :only (main-layout form-layout)]
          [model]
