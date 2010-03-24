@@ -10,12 +10,6 @@ Sandbar is a library for web applications built on top of Compojure. It contains
 
 The project contains the library code as well a reference application which uses the library.
 
-h2. Overview and motivation
-
-The goal of this project is to create a library that will allow Clojure developers to create useful web applications with the minimum amount of code. I want to see how small the minimum can be.
-
-This is not a framework so it doesn't tell you how to work. It provides features that you might need as libraries. If you find something here that is useful to you, then use it. You may safely ignore the rest.
-
 h2. Running the reference application
 
 The reference application demonstrates how to use the sandbar libraries.
