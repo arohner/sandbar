@@ -49,35 +49,35 @@ h2. Features
 
 This is the very beginning of this project. Much of the code is a mess at this point and the API is shifting. As features become more complete I will add documentation for them here. The main focus in now on authentication and authorization as I think this is the first feature that others may want to use.
 
-The vaguely named sandbar.library namespace contains a lot of code that will end up in other namespaces in the future.
+The vaguely named <code>sandbar.library</code> namespace contains a lot of code that will end up in other namespaces in the future. Right now it is a catch-all for code that I am to lazy to organize.
 
 h3. Authentication and Authorization
 
-The code for authentication and authorization is located in the namespace <code>sandbar.auth</code>. For an example of how it may be used see <code>sandbar.example.ideadb.app</code>. For now the main focus is to authorized based on URIs and user roles.
+The code for authentication and authorization is located in the namespace <code>sandbar.auth</code>. For an example of how it may be used, see <code>sandbar.example.ideadb.app</code>. For now, the main focus is on authoriztion based on URIs and user roles.
 
 h4. Configuration
 
-One may create a security configuration that looks like this:
+One may create a security configuration that looks something like this:
 
 <pre>
 <code>
 (def security-config
-	 [#"/admin.*"                   [:admin :ssl] 
-	  #"/idea/edit.*"               [:admin :ssl] 
-	  #"/idea/delete.*"             [:admin :ssl] 
-	  #"/idea/download.*"           :admin 
-	  #"/permission-denied.*"       :any
-	  #"/login.*"                   [:any :ssl] 
-	  #".*.css|.*.js|.*.png|.*.gif" [:any :any-channel] 
-	  #".*"                         [#{:admin :user} :nossl]])	
+     [#"/admin.*"                   [:admin :ssl] 
+      #"/idea/edit.*"               [:admin :ssl] 
+      #"/idea/delete.*"             [:admin :ssl] 
+      #"/idea/download.*"           :admin 
+      #"/permission-denied.*"       :any
+      #"/login.*"                   [:any :ssl] 
+      #".*.css|.*.js|.*.png|.*.gif" [:any :any-channel] 
+      #".*"                         [#{:admin :user} :nossl]])	
 </code>
 </pre>
 
-This is configuring two things at once: authorization and channel security. You could do just one or the other if that is all you need. A vector is used for the configuration because the order in which items are entered is important. The vector contains pairs of entries. Each entry has a regular expression literal and a requirement to use if the regular expression matches the current URI. Each requirement may be a vector, a set or a keyword. If it is a vector then it must contain two elements, the first being the role and the second being the channel requirement. Roles can be expressed as either a keyword for the role or as a set of role keywords. Channel security requirements can be one of the keywords :ssl, :nossl or :any-channel. This sounds complex but I think it is simple to understand when looking at the above example.
+This is configuring two things at once: authorization and channel security. You could do just one or the other if that is all you need. A vector is used for the configuration because the order in which items are entered is important. The vector contains pairs of entries. Each entry has a regular expression literal and a requirement to use if the regular expression matches the current URI. Each requirement may be a vector, a set or a keyword. If it is a vector then it must contain two elements, the first being the role and the second being the channel requirement. Roles can be expressed as either a keyword for the role or as a set of role keywords. Channel security requirements must be one of the keywords :ssl, :nossl or :any-channel. This sounds complex but I think it is simple to understand when looking at the above example.
 
 h4. Applying the configuration to your routes
 
-Once again from the reference application, here is an example of how to use the configuration.
+Once again from the reference application, here is an example of how to use this configuration.
 
 <pre>
 <code>
@@ -93,7 +93,7 @@ Once again from the reference application, here is an example of how to use the 
 
 h4. Authentication function
 
-In the above example I use the <code>basic-auth</code> authentication function from the namespace <code>sandbar.basic_authentication</code>. Authentication functions are a function of the request that returns either a valid user or a redirect. This means that you can easily create your own authentication function. A valid user is a map that contains at least two things: a :name key that has the user's username and a :roles key that maps to set of roles that this user belongs to. The roles in this set must match the roles that are used in the configuration.
+In the above example I use the <code>basic-auth</code> authentication function from the namespace <code>sandbar.basic_authentication</code>. Authentication functions are a function of the request that return either a valid user or a redirect. This means that you can easily create your own authentication function. A valid user is a map that contains at least two things: a :name key that maps to a user's username and a :roles key that maps to the set of roles that this user belongs to. The role keys that are used in this set must match the roles that are used in your configuration.
 
 The <code>basic-auth</code> function here will redirect the user to a login form.
 
