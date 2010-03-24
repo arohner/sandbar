@@ -46,7 +46,7 @@ tr.even {
 }
 
 div#form-page-header {
- height: 60px;
+ height: 40px;
  color: #b2b2b2;
 }
 
@@ -162,7 +162,7 @@ div.form div.field-label span.required {
  
 div#page {
  padding-top: 10px;
- background: url(../images/idea_hopper_icon.png) no-repeat 0 0;
+ background: url(../images/idea_db_icon.png) no-repeat 0 0;
 }
 
 div#welcome-message {
@@ -213,7 +213,7 @@ div.filter-and-sort-controls {
 }
 
 div#idea-actions {
- height: 60px;
+ height: 50px;
 }
 
 div.form span.group-title {

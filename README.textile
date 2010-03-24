@@ -1,6 +1,6 @@
 h1. Sandbar
 
-Sandbar is a library for web applications built on top of Compojure. It contains code to help with: 
+Sandbar is a library for web applications built on top of Compojure. It contains (will contain) code to help with: 
 
 * scaling server side state
 * tables which may be filtered, sorted and paged
@@ -8,7 +8,7 @@ Sandbar is a library for web applications built on top of Compojure. It contains
 * authorization and authentication
 * user management
 
-The project contains the library code as well a reference application which uses the library.
+The project contains the library code as well a reference application which uses it.
 
 h2. Running the reference application
 
@@ -22,14 +22,16 @@ To run the reference application, follow these steps:
 # "Install Leiningen":http://github.com/technomancy/leiningen
 # Execute the following commands:
 
-<pre><code> 
+<pre>
+<code> 
 git clone git://github.com/brentonashworth/sandbar.git
 cd sandbar
 lein deps
 lein test
 lein repl
 (load-file "src/testdrive.clj")
-</code></pre>
+</code>
+</pre>
 
 You may now open a browser and go to http://localhost:8080/ideadb/.
 
@@ -41,20 +43,66 @@ password: admin
 username: normal-user
 password: password
 
-Log in with one of these accounts and take it for a spin. The next step would be to take a look at the code and tinker with it in your development environment of choice. Start with src/sandbar/example/ideadb/app.clj.
+Log in with one of these accounts and take it for a spin. The next step would be to take a look at the code and tinker with it in your development environment of choice. Start with <code>sandbar.example.ideadb.app</code>.
 
 h2. Features
 
 This is the very beginning of this project. Much of the code is a mess at this point and the API is shifting. As features become more complete I will add documentation for them here. The main focus in now on authentication and authorization as I think this is the first feature that others may want to use.
 
+The vaguely named sandbar.library namespace contains a lot of code that will end up in other namespaces in the future.
+
 h3. Authentication and Authorization
 
-See src/sandbar/example/ideadb/app.clj and src/sandbar/auth.clj
+The code for authentication and authorization is located in the namespace <code>sandbar.auth</code>. For an example of how it may be used see <code>sandbar.example.ideadb.app</code>. For now the main focus is to authorized based on URIs and user roles.
 
-* Work on API. How can it be easily extended.
-* Use SHA-256
-* Use Compojure's security functions.
-* Improve error handling when something goes wrong at the db level. Catch exceptions and display error messages.
+h4. Configuration
+
+One may create a security configuration that looks like this:
+
+<pre>
+<code>
+(def security-config
+	 [#"/admin.*"                   [:admin :ssl] 
+	  #"/idea/edit.*"               [:admin :ssl] 
+	  #"/idea/delete.*"             [:admin :ssl] 
+	  #"/idea/download.*"           :admin 
+	  #"/permission-denied.*"       :any
+	  #"/login.*"                   [:any :ssl] 
+	  #".*.css|.*.js|.*.png|.*.gif" [:any :any-channel] 
+	  #".*"                         [#{:admin :user} :nossl]])	
+</code>
+</pre>
+
+This is configuring two things at once: authorization and channel security. You could do just one or the other if that is all you need. A vector is used for the configuration because the order in which items are entered is important. The vector contains pairs of entries. Each entry has a regular expression literal and a requirement to use if the regular expression matches the current URI. Each requirement may be a vector, a set or a keyword. If it is a vector then it must contain two elements, the first being the role and the second being the channel requirement. Roles can be expressed as either a keyword for the role or as a set of role keywords. Channel security requirements can be one of the keywords :ssl, :nossl or :any-channel. This sounds complex but I think it is simple to understand when looking at the above example.
+
+h4. Applying the configuration to your routes
+
+Once again from the reference application, here is an example of how to use the configuration.
+
+<pre>
+<code>
+(decorate development-routes
+          (with-context @app-context)
+          (with-security security-config basic-auth)
+          (with-session)
+          (with-secure-channel security-config 8080 8443))
+</code>
+</pre>
+
+<code>with-security</code> and <code>with-secure-channel</code> are middleware functions that use the configuration above to control access to specific URIs and to ensure that the channel security rules are being enforced. Note that these can be used independently of each other.
+
+h4. Authentication function
+
+In the above example I use the <code>basic-auth</code> authentication function from the namespace <code>sandbar.basic_authentication</code>. Authentication functions are a function of the request that returns either a valid user or a redirect. This means that you can easily create your own authentication function. A valid user is a map that contains at least two things: a :name key that has the user's username and a :roles key that maps to set of roles that this user belongs to. The roles in this set must match the roles that are used in the configuration.
+
+The <code>basic-auth</code> function here will redirect the user to a login form.
+
+The <code>sandbar.basic_authentication</code> namespace still needs some work in order to make it more flexible so that anyone can use it in their project no matter where their data is stored or how it is organized.
+
+h4. TODO
+
+* Use Compojure's security functions. (How did I miss that?)
+* How about some error handling code!!
 * Should be able to configure a default login redirect page. For when a user logs in but there is no redirect page in the session.
 
 h2. Road map

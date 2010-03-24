@@ -12,7 +12,7 @@
         [compojure.http [routes :only (defroutes GET POST)]
                         [helpers :only (redirect-to)]
                         [session :only (flash-assoc)]]
-        (sandbar library auth userui)
+        (sandbar library auth basic_authentication userui)
         (sandbar.example.ideadb
          [layouts :only (main-layout form-layout)]
          [model]
@@ -140,6 +140,6 @@
         (download-ideas)])
   (security-edit-user-routes "/admin" main-layout (fn [r] (:uri r))
                              properties user-data-functions)
-  (security-login-routes "/idea" main-layout (fn [r] (:uri r))
+  (security-login-routes "" main-layout (fn [r] (:uri r))
                          properties user-data-functions))
 

@@ -7,15 +7,15 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.auth
-  (:use (sandbar library)
-        (compojure.http [routes :only (routes GET POST)]
-                        [helpers :only (redirect-to)])))
+  (:use (sandbar [library :only (cpath
+                                 remove-cpath
+                                 get-from-session)])))
 
 (def *hash-delay* 1000)
 
 ;;
-;; Helpers
-;; =======
+;; Helpers - Pure Functions
+;; ========================
 ;;
 
 (defn redirect-302 [page]
@@ -27,13 +27,25 @@
   {:status 301
    :headers {"Location" (cpath url)}})
 
-(defn redirect-to-auth [uri-prefix]
-  (redirect-302 (str uri-prefix "/login")))
+(defn redirect? [m]
+  (or (= (:status m) 302)
+      (= (:status m) 301)))
 
-(defn redirect-to-permission-denied [uri-prefix]
+(defn append-to-redirect-loc
+  "Append the uri-prefix to the value of Location in the headers of the
+   redirect map."
+  [m uri-prefix]
+  (if (or (nil? uri-prefix) (empty? uri-prefix))
+    m
+    (let [loc (remove-cpath ((:headers m) "Location"))]
+      (if (re-matches #".*://.*" loc)
+        m
+        (merge m {:headers {"Location" (cpath (str uri-prefix loc))}})))))
+
+(defn- redirect-to-permission-denied [uri-prefix]
   (redirect-302 (str uri-prefix "/permission-denied")))
 
-(defn params-str [request]
+(defn- params-str [request]
   (let [p (:query-string request)]
     (if (not (empty? p)) (str "?" p) "")))
 
@@ -49,7 +61,7 @@
          (params-str request))))
 
 (defn- role? [x]
-  (not (or (= x :ssl) (= x :nossl))))
+  (not (or (= x :ssl) (= x :nossl) (= x :any-channel))))
 
 (defn- role-set
   "Return a set of roles or nil. The input could be a single role, a set of
@@ -104,7 +116,9 @@
             (= (first required-roles) :any))))
 
 
-(defn filter-channel-config [config]
+(defn filter-channel-config
+  "Extract the channel configuration from the security configuration."
+  [config]
   (map #(vector (first %) (if (vector? (last %))
                             (last (last %))
                             (last %)))
@@ -122,7 +136,7 @@
    *hash-delay*."
   ([password salt] (hash-password password salt *hash-delay*))
   ([password salt n]
-     (let [digest (java.security.MessageDigest/getInstance "SHA-1")]
+     (let [digest (java.security.MessageDigest/getInstance "SHA-256")]
        (do (.reset digest)
            (.update digest (.getBytes salt "UTF-8")))
        (loop [input (.digest digest (.getBytes password "UTF-8"))
@@ -132,94 +146,6 @@
            (recur (do (.reset digest)
                       (.digest digest input))
                   (dec count)))))))
-
-;;
-;; Basic Authentication
-;; ====================
-;;
-
-(defn create-login-from-params
-  "Create a map of all login info to verify the identity of this user."
-  [load-fn request]
-  (let [params (:params request)
-        form-data (-> (select-keys params [:username :password]))
-        user (first (load-fn :app_user {:username (:username form-data)} {}))
-        roles (index-by :id (load-fn :role))]
-    (-> form-data
-        (assoc :password-hash (:password user))
-        (assoc :salt (:salt user))
-        (assoc :roles (set
-                       (map #(keyword (:name (roles %)))
-                            (map :role_id
-                                 (load-fn :user_role
-                                          {:user_id (:id user)} {}))))))))
-
-(def invalid-login?!
-     (partial
-      invalid?
-      :login
-      (fn [props form-data]
-        (merge
-         (required-field form-data :username
-                         (str (property-lookup props :username)
-                              " is required."))
-         (required-field form-data :password
-                         (str (property-lookup props :password)
-                              " is required."))))))
-
-(defn login-page [props request]
-  (login-form
-   (:uri request) "Login"
-   (form-layout-grid [1 1]
-                     :login
-                     [(form-textfield props :username {:size 25} :required)
-                      (form-password props :password {:size 25}  :required)]
-                     request
-                     {})))
-
-(defn valid-password?
-  ([user-data] (valid-password? user-data *hash-delay*))
-  ([user-data n]
-     (= (hash-password (:password user-data) (:salt user-data) n)
-     (:password-hash user-data))))
-
-(defn authenticate! [load-fn props request]
-  (let [user-data (create-login-from-params load-fn request)
-        success (get-from-session request :auth-redirect-uri)
-        failure "login"]
-    (redirect-to
-     (cond (invalid-login?! props user-data request) failure
-           (not (valid-password? user-data)) failure
-           :else (do
-                   (put-in-session! request :current-user
-                                    {:name (:username user-data)
-                                     :roles (:roles user-data)})
-                   (remove-from-session! request :auth-redirect-uri)
-                   success)))))
-
-(defn logout! [props request]
-  (let [logout-page (if-let [p (:logout-page props)]
-                      (cpath p)
-                      (cpath "/"))]
-    (redirect-to
-     (do (remove-from-session! request :current-user)
-         logout-page))))
-
-;;
-;; Routes
-;; ======
-;;
-
-(defn security-login-routes [path-prefix layout name-fn props data-fns]
-  (routes
-   (GET (str path-prefix "/login*")
-        (layout (name-fn request)
-                request
-                (login-page props request)))
-   (POST (str path-prefix "/login*")
-         (authenticate! (data-fns :load) props request))
-   (GET (str path-prefix "/logout*")
-        (logout! props request))))
 
 
 ;;
@@ -256,19 +182,21 @@
             :else (handler request)))))
 
 (defn with-security
-  "Middleware function for form based authentication and authorization."
-  ([handler config] (with-security handler config ""))
-  ([handler config uri-prefix]
+  "Middleware function for authentication and authorization."
+  ([handler config auth-fn] (with-security handler config auth-fn ""))
+  ([handler config auth-fn uri-prefix]
      (fn [request]
        (let [required-roles (required-roles config request)
-             user (current-user request)]
-         (cond (and (auth-required? required-roles)
-                    (nil? user)) (do (put-in-session! request
-                                                      :auth-redirect-uri
-                                                      (:uri request))
-                                     (redirect-to-auth uri-prefix))
-                    (allow-access? config
-                                   (fn [r] (:roles user))
-                                   request)
-                    (handler request)
-                    :else (redirect-to-permission-denied uri-prefix))))))
+             user (current-user request)
+             user-status (if (and (auth-required? required-roles)
+                                  (nil? user))
+                           (auth-fn request)
+                           user)]
+         (cond (redirect? user-status)
+               (append-to-redirect-loc user-status uri-prefix)
+               (allow-access? config
+                              (fn [r] (:roles user-status))
+                              request)
+               (handler request)
+               :else (redirect-to-permission-denied uri-prefix))))))
+             

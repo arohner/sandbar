@@ -56,7 +56,7 @@
           (if (not (nil? (current-user request)))
             [:div "You are currently logged in as "
            [:b (current-username request)] ". "
-           (clink-to "/idea/logout" "logout")])]]]]]
+           (clink-to "/logout" "logout")])]]]]]
      (javascript "ideadb.js")]]))
 
 (defn main-layout [title request & body]
