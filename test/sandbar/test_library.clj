@@ -14,6 +14,15 @@
 (defn test-request [params]
   {:session {:id "x"} :params params})
 
+
+(deftest test-put-in-session!
+  (t "put in session"
+     (t "one element"
+        (binding [session (atom {})]
+          (is (= (-> (put-in-session! {:session {:id "i"}} :t "t")
+                     :i :t)
+                 "t"))))))
+
 (deftest test-merge-table-state-vecs
   (t "merge table sort state"
      (t "adding a new sort to empty list"

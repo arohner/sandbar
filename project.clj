@@ -1,4 +1,4 @@
-(defproject sandbar "0.0.1-SNAPSHOT"
+(defproject sandbar "0.0.2-SNAPSHOT"
   :description "Clojure web application library."
   :dependencies [[org.clojure/clojure "1.2.0-master-SNAPSHOT"]
                  [org.clojure/clojure-contrib "1.2.0-master-SNAPSHOT"]

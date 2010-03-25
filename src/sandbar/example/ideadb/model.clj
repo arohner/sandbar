@@ -7,8 +7,8 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.example.ideadb.model
-  (:use [sandbar.database
-         :only (find-in delete-record save-or-update)]
+  (:use (sandbar [auth :only (current-user)]
+                 [database :only (find-in delete-record save-or-update)])
         [clojure.contrib.str-utils :only (re-split re-partition)]))
 
 (def db (atom nil))

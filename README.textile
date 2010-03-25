@@ -7,8 +7,11 @@ Sandbar is a library for web applications built on top of Compojure. It contains
 * form layout, validation and error reporting
 * authorization and authentication
 * user management
+* CSS builder
 
 The project contains the library code as well a reference application which uses it.
+
+I am creating this library for my own benefit and will be using it in all future web applications that I create. Therefore I will only be focusing on the things that I think will make me most productive.
 
 h2. Running the reference application
 
@@ -99,13 +102,45 @@ The <code>basic-auth</code> function here will redirect the user to a login form
 
 The <code>sandbar.basic_authentication</code> namespace still needs some work in order to make it more flexible so that anyone can use it in their project no matter where their data is stored or how it is organized.
 
+h4. Authorization
+
+The <code>sandbar.auth</code> namespace includes the functions:
+
+* current-user
+* current-username
+* current-user-roles
+* any-role-granted?
+
+The first three take either the request as an argument or no arguments. The no argument version can be used in any code that is executed within the <code>with-security</code> middleware. The var <code>*current-user*</code> is bound to the current user in <code>with-security</code>.
+
+<code>any-role-granted?</code> takes a request and list or roles as arguments or just a list of roles. If passing only a list roles then it must also be called within <code>with-security</code>.
+
+These functions can be used to authorize access at the function level and should be used in your model to control access to sensitive data.
+
+h4. Authorization Exceptions
+
+* *access-error*
+* *authorization-error*
+
+<pre>
+<code>
+(kit/raise *access-error* "testing with-security")
+</code>
+</pre>
+
 h4. TODO
 
 * Use Compojure's security functions. (How did I miss that?)
 * How about some error handling code!!
-* Should be able to configure a default login redirect page. For when a user logs in but there is no redirect page in the session.
+* Should be able to configure a default login redirect page. For when a user logs in but there is no redirect page in the session
+* Create a new version of app.clj that does not have URI based authentication but does secure data in the model.
+* wrap (kit/raise *access-error* "testing with-security") in a function so that users don't have to know about error-kit: something like <code>(access-exception) (authorization-exception)</code>
 
 h2. Road map
+
+There will be many dependencies between the parts of the project. Therefore I am doing a breadth first rough implementation. This will give me some idea as to how the pieces will fit together and what issues I will run into. I will then go back through and complete each piece one at a time in dependency order. For now, I would like to keep everything in one project to ease implementation, but in the future I may break each piece out into a separate project.
+
+h3. The reference application
 
 The reference application is currently easiest to get running with MySQL. I plan to change this to use Derby by default so that it will be easier for others to test drive.
 
@@ -117,9 +152,19 @@ The client-server model will have a very simple interface and be backed by "Flee
 
 h3. Tables which may be filtered, sorted and paged
 
+The reference project has some working examples. Each of the tables in the application may be filtered, and sorted on multiple columns. More features will be added in the future and the code will greatly improved over time.
+
 h3. Form layout, validation and error reporting
 
+Working on making it easy to layout and build forms without having to write HTML. There are examples of this in all of the forms in the reference application. The current code needs a lot of work.
+
 h3. User management
+
+Every application that I create needs to home some kind of user management GUI. The goal here is to package this up into a library that I can just include and configure and never have to worry about again. This is also partially implemented.
+
+h3. CSS Builder
+
+Working will CSS on a large project always gets out of control. I want to be able to write my CSS as Clojure code. This currently does not exist.
 
 h2. License
 

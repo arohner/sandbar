@@ -70,9 +70,9 @@
      (cond (invalid-login?! props user-data request) failure
            (not (valid-password? user-data)) failure
            :else (do
-                   (put-in-session! request :current-user
-                                    {:name (:username user-data)
-                                     :roles (:roles user-data)})
+                   (put-user-in-session! request
+                                         {:name (:username user-data)
+                                          :roles (:roles user-data)})
                    (remove-from-session! request :auth-redirect-uri)
                    success)))))
 

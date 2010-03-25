@@ -917,3 +917,11 @@
    [:div "You are trying to access a page for which you do not have the
           correct permissions."]
    [:br]])
+
+(defn authentication-error-page []
+  [:div
+   [:h2 "Authentication Error"]
+   [:div "An error has occured while trying to authenticate a user. This can
+          happen when a loop is encountered. Some part of the system is
+          raising an Authentication error but the user has been authenticated."]
+   [:br]])
