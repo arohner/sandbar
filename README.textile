@@ -14,7 +14,7 @@ The project contains the library code as well as a reference application which u
 
 h2. Motivation
 
-There is one major difference in philosophy between this project and Compojure or Ring. The main focus of this library is stateful web applications. There is not one right way to create a web application. Different applications have different requirements. Some benefit from a more stateful approach. But you will say, stateful does not scale? It does scale, it's just not as easy. The Compojure/Ring approach is more stateless and restful. Which is good for some applications. You can see this in the way sessions are implemented. They have chosen a functional style of session management. If your application is more stateful then it can sometimes be awkward to work with.
+There is one major difference in philosophy between this project and Compojure or Ring. The main focus of this library is stateful web applications. There is not one right way to create a web application. Different applications have different requirements. Some benefit from a more stateful approach others from a restful approach. But you will say, stateful does not scale? It does scale, it's just not as easy. The Compojure/Ring approach is more stateless and restful. This is good for some applications. You can see this in the way sessions are implemented. They have chosen a functional style of session management. 
 
 <table align="center">
 <tr><td>
@@ -24,8 +24,7 @@ There is one major difference in philosophy between this project and Compojure o
 <tr><td>*Figure 1:* Compojure/Ring Sessions</td></tr>
 </table>
 
-
-This library thinks of sessions that are more like your database except faster and without all of the database pain. You should be able to get something from and put something in the session from anywhere in your application. Working with the session should be orthogonal to the request response cycle.
+If your application is more stateful then it can sometimes be awkward to work with. This library thinks of sessions that are more like your database except faster and without all of the database pain. You should be able to get something from, and put something in, the session from anywhere in your application. Working with the session should be orthogonal to the request response cycle.
 
 <table align="center">
 <tr><td>
@@ -35,9 +34,35 @@ This library thinks of sessions that are more like your database except faster a
 <tr><td>*Figure 2:* Sandbar Sessions</td></tr>
 </table>
 
-In the past you have had a few choices as to where you would put session data. You can store it in memory, in a cookie or in your database. There is a problem with each of these. In memory does not scale. In a cookie you have limited space. In the database is too much work and too slow. Also, session data is transient. You usually only need it for a short period of time. It just seems wrong to mix this into your system of record.
+In the past you have had a few choices as to where you would put session data. You can store it in memory, in a cookie or in your database. There is a problem with each of these. In memory does not scale, cookies have limited space and the database is too much work and too slow. Also, session data is transient, you usually only need it for a short period of time. It just seems wrong to mix this into your system of record.
 
-The approach that I am advocating it to store session data in a memory-only, schema-free database. This library will have a simple interface to the session. For small applications the session will be stored in an atom in memory. When you need to start scaling you can switch to client-server mode without having to change any of your code. In client-server mode, the interface will handle sending and retrieving data from the session database. Because we are using an in-memory database it will be fast and because it is schema-free we will be able to store arbitrary maps without a lot of configuration.
+The approach that I am advocating it to store session data in a memory-only, schema-free database. This library will have a simple interface to the session. For small applications the session will be stored in an atom in memory. When you need to start scaling you can switch to client-server mode without having to change any of your code. In client-server mode, the interface will handle sending and retrieving data from the session store. Because we are using an in-memory database it will be fast and because it is schema-free we will be able to store arbitrary maps without a lot of configuration.
+
+Java application servers such as Tomcat have ways of storing and scaling session data. The problem with this approach is that if forces you to use "sticky" sessions. This means that once you start using one application sever you will continue to be routed to that server as long as it is running. If the server goes down, you will then be routed to a different server. Another way to scale session data is to use Terracotta. But again this requires "sticky" sessions.
+
+I believe that schema-free, in-memory database solution is better and easier to scale.
+
+Here is an example of how this would work in situation with multiple application servers. Imagine that you are filling in a form which then gets validated and does not pass validation. You then want to redirect the user to the form and display error messages for each field. This involves two requests. The first is the initial form submission. This request is then redirected back to the form. This second request will display the form and any error messages. The form errors will be stored in session flash which is implemented on top of sessions. If you have multiple application servers and are not using "sticky" sessions then the second request may go to a different application server.
+
+<table align="center">
+<tr><td>
+	<img src="http://www.drawbacksolutions.com/images/fpl/request-response-1.png" 
+	     alt="Sandbar Sessions" />
+</td></tr>
+<tr><td>*Figure 3:* Form Submission Request</td></tr>
+</table>
+
+In Figure 3 we show the initial request. This is the form submission. The form is validated and then the session is updated by simultaneously sending messages to two session servers. The "Put in Session" step happens in another thread so the application does not have to wait for it to finish before returning the redirect to the client.
+
+<table align="center">
+<tr><td>
+	<img src="http://www.drawbacksolutions.com/images/fpl/request-response-2.png" 
+	     alt="Sandbar Sessions" />
+</td></tr>
+<tr><td>*Figure 4:* Redirect to Form Request</td></tr>
+</table>
+
+In Figure 4 we see the redirect request. This request goes to a different application server (A2) which then loads the session data from the session server (S2)
 
 h2. Running the reference application
 
