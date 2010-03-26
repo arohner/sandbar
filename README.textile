@@ -1,13 +1,14 @@
 h1. Sandbar
 
-Sandbar is a library for web applications built on top of Compojure. It contains (will contain) code to help with: 
+Sandbar is a library for web applications built on top of Compojure and Ring. It contains (will contain) code to help with: 
 
-* scaling server side state
-* tables which may be filtered, sorted and paged
-* form layout, validation and error reporting
-* authorization and authentication
-* user management
+* Scaling server side state
+* Tables which may be filtered, sorted and paged
+* Form layout, validation and error reporting
+* Authorization and authentication
+* User management
 * CSS builder
+* Some kind of interface to Lucene (Solr)
 
 The project contains the library code as well a reference application which uses it.
 
@@ -117,24 +118,36 @@ The first three take either the request as an argument or no arguments. The no a
 
 These functions can be used to authorize access at the function level and should be used in your model to control access to sensitive data.
 
-h4. Authorization Exceptions
+h4. Authorization Errors
 
-* *access-error*
-* *authorization-error*
+You may use the functions above to determine if the current user is allowed to access data. When you discover that a user is not authenticated or that a user does not have the correct role you may use <code>access-error</code> or <code>authorization-error</code> to raise an error. If an <code>access-error</code> is raised then the user will be redirected to the access denied page. If an <code>authorization-error</code> is raised the your authorization function will be called. If your authentication function returns a valid user then that user will be put in the session and the handler function will be called again.
 
+There are also two macros to that make this even easier. They are <code>ensure-authenticated</code> and <code>ensure-any-role</code>. For example:
+ 
 <pre>
 <code>
-(kit/raise *access-error* "testing with-security")
+(ensure-authenticated
+  (order-members-only-jacket {:size "medium husky"}))
 </code>
 </pre>
 
+This will check to ensure that the <code>*current-user*</code> is authenticated and it not then it will not order the jacket but will raise an authentication error.
+
+<pre>
+<code>
+(ensure-any-role [:user :editor]
+  (set-text "something"))
+</code>
+</pre>
+
+<code>ensure-any-role</code> will first ensure that that the <code>*current-user*</code> is authenticated. If not it will raise an authentication error. It will then ensure that the <code>*current-user*</code> is in one of the roles. If not then it will raise an access error.
+
 h4. TODO
 
-* Use Compojure's security functions. (How did I miss that?)
+* Use Compojure's security functions. (How did I miss that?) Where did they go in 0.4.0.
 * How about some error handling code!!
 * Should be able to configure a default login redirect page. For when a user logs in but there is no redirect page in the session
 * Create a new version of app.clj that does not have URI based authentication but does secure data in the model.
-* wrap (kit/raise *access-error* "testing with-security") in a function so that users don't have to know about error-kit: something like <code>(access-exception) (authorization-exception)</code>
 
 h2. Road map
 
@@ -164,7 +177,7 @@ Every application that I create needs to home some kind of user management GUI. 
 
 h3. CSS Builder
 
-Working will CSS on a large project always gets out of control. I want to be able to write my CSS as Clojure code. This currently does not exist.
+Working with CSS on a large project always gets out of control. I want to be able to write my CSS as Clojure code. This currently does not exist.
 
 h2. License
 

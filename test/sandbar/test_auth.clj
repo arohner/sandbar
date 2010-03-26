@@ -8,7 +8,6 @@
 
 (ns sandbar.test_auth
   (:use [clojure.test]
-        (clojure.contrib [error-kit :as kit])
         (sandbar library auth basic_authentication)
         [sandbar.test :only (t)]))
 
@@ -156,62 +155,21 @@
                                  {:uri "/test-context/some/random/page"})
                  #{:admin :user}))))))
 
-;; This test will need to be re-written based on changes to
-;; allow-access?
-#_(deftest test-allow-access?
+(deftest test-allow-access?
   (binding [app-context (atom "")]
-    (t "access to a uri"
-      (t "IS allowed when role is found for uri"
-         (is (= (allow-access? fixture-security-config
-                               (fn [r] #{:admin})
-                               {:uri "/admin/page"})
-                true)))
-      (t "is NOT allowed when no app context is set"
-         (is (= (allow-access? fixture-security-config
-                               (fn [r] #{:editor})
-                               {:uri "/test-context/idea/edit"})
-                false)))
-      (t "IS allowed with the app-context is set"
-         (binding [app-context (atom "/test-context")]
-           (is (= (allow-access? fixture-security-config
-                                 (fn [r] #{:editor})
-                                 {:uri "/test-context/idea/edit"})
-                  true))))
-      (t "is NOT allowed when user is not in correct role"
-         (is (= (allow-access? fixture-security-config
-                               (fn [r] #{:user :editor})
-                               {:uri "/admin/page"})
-                false)))
-      (t "IS allowed when user is in one of the correct roles"
-         (is (= (allow-access? fixture-security-config
-                               (fn [r] #{:user :editor})
-                               {:uri "/index"})
-                true)))
-      (t "IS allowed when user is in one of the two allowed roles"
-         (is (= (allow-access? fixture-security-config
-                               (fn [r] #{:editor})
-                               {:uri "/download"})
-                true)))
-      (t "is NOT allowed when user is not in the correct role"
-         (is (= (allow-access? fixture-security-config
-                               (fn [r] #{:user})
-                               {:uri "/download"})
-                false)))
-      (t "is Not allowed when user is not in the correct role"
-         (is (= (allow-access? fixture-security-config
-                               (fn [r] #{:user})
-                               {:uri "/admin/page"})
-                false)))
-      (t "is Not allowed when no matching entry is found"
-         (is (= (allow-access? (take 1 fixture-security-config)
-                               (fn [r] #{:user})
-                               {:uri "/index"})
-                false)))
-      (t "IS allowed when the role is set to :any"
-         (is (= (allow-access? fixture-security-config
-                               (fn [r] #{:none})
-                               {:uri "/permission-denied"})
-                true))))))
+    (t "allow access"
+      (t "when req and actual are :admin"
+         (is (true? (allow-access? #{:admin} #{:admin}))))
+      (t "when :admin req but user is in :user"
+         (is (false? (allow-access? #{:admin} #{:user}))))
+      (t "when user is black but :any is req"
+         (is (true? (allow-access? #{:user :any} #{}))))
+      (t "when user is black but :user is req"
+         (is (false? (allow-access? #{:user} #{}))))
+      (t "when user has one of two req roles"
+         (is (true? (allow-access? #{:user :admin} #{:admin}))))
+      (t "when user is in role but not the correct one out of two"
+         (is (false? (allow-access? #{:editor :admin} #{:user})))))))
 
 (deftest test-auth-required?
   (t "auth required"
@@ -280,16 +238,14 @@
           (binding [session (atom {})]
             (t "redirect to permission denied when access exception is thrown"
                (is (= ((with-security
-                         (fn [r] (kit/raise *access-error*
-                                            "testing with-security"))
+                         (fn [r] (access-error "testing with-security"))
                          []
                          basic-auth)
                        {:session {:id "x"} :uri "/x"})
                       (redirect-302 "/permission-denied"))))
             (t "redirect to login when authorization exception is thrown"
                (is (= ((with-security
-                         (fn [r] (kit/raise *authentication-error*
-                                            "testing with-security"))
+                         (fn [r] (authentication-error "testing with-security"))
                          []
                          basic-auth)
                        {:session {:id "x"} :uri "/x"})
@@ -297,11 +253,9 @@
             (binding [session (atom {:x {}})]
               (t "redirect to authentication error page when in auth-err loop"
                 (is (= ((with-security
-                          (fn [r] (do
-                                    (if (= (:uri r) "/x")
-                                      (kit/raise *authentication-error*
-                                                 "testing with-security")
-                                      "success")))
+                          (fn [r] (if (= (:uri r) "/x")
+                                    (authentication-error)
+                                    "success"))
                           []
                           (fn [r] {:name "t" :roles #{:user}}))
                         {:session {:id "x"} :uri "/x"})
@@ -309,14 +263,39 @@
             (binding [session (atom {:x {}})]
               (t "access page when authentication is successfull"
                 (is (= ((with-security
-                          (fn [r] (if *current-user*
-                                    "success"
-                                    (kit/raise *authentication-error*
-                                               "testing with-security")))
+                          (fn [r] (ensure-authenticated
+                                    "success"))
                           []
                           (fn [r] {:name "t" :roles #{:user}}))
                         {:session {:id "x"} :uri "/x"})
-                       "success")))))))))
+                       "success"))))
+            (binding [session (atom {:x {}})]
+              (t "permission denied using ensure-any-role"
+                 (is (= ((with-security
+                           (fn [r] (ensure-any-role [:admin]
+                                                    "success"))
+                           []
+                           (fn [r] {:name "t" :roles #{:user}}))
+                         {:session {:id "x"} :uri "/x"})
+                        (redirect-302 "/permission-denied")))))
+            (binding [session (atom {:x {}})]
+              (t "access allowed using ensure-any-role"
+                 (is (= ((with-security
+                           (fn [r] (ensure-any-role [:user]
+                                                    "success"))
+                           []
+                           (fn [r] {:name "t" :roles #{:user}}))
+                         {:session {:id "x"} :uri "/x"})
+                        "success"))))
+            (binding [session (atom {:x {}})]
+              (t "access-allowed using ensure-any-role when multiple roles"
+                 (is (= ((with-security
+                           (fn [r] (ensure-any-role [:admin :user]
+                                                    "success"))
+                           []
+                           (fn [r] {:name "t" :roles #{:user}}))
+                         {:session {:id "x"} :uri "/x"})
+                        "success")))))))))
 
 (deftest test-any-role-granted?
   (t "are any of these roles granted"

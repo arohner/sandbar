@@ -73,6 +73,7 @@
 (defn property-lookup [p k]
   (k p (name k)))
 
+
 ;;
 ;; State
 ;; =====
@@ -131,7 +132,32 @@
   ([path name attrs]
     (link-to (str (cpath path)) (image name attrs)))
   ([path name mouseover attrs]
-    (link-to (str (cpath path)) (image name mouseover attrs))))
+     (link-to (str (cpath path)) (image name mouseover attrs))))
+
+(defn redirect-302 [page]
+  {:status 302
+   :headers {"Location" (cpath page)}
+   :body ""})
+
+(defn redirect-301 [url]
+  {:status 301
+   :headers {"Location" (cpath url)}})
+
+(defn redirect? [m]
+  (or (= (:status m) 302)
+      (= (:status m) 301)))
+
+(defn append-to-redirect-loc
+  "Append the uri-prefix to the value of Location in the headers of the
+   redirect map."
+  [m uri-prefix]
+  (if (or (nil? uri-prefix) (empty? uri-prefix))
+    m
+    (let [loc (remove-cpath ((:headers m) "Location"))]
+      (if (re-matches #".*://.*" loc)
+        m
+        (merge m {:headers {"Location" (cpath (str uri-prefix loc))}})))))
+
 
 ;;
 ;; Flash & Session

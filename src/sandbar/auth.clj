@@ -12,7 +12,11 @@
         (sandbar [library :only (cpath
                                  remove-cpath
                                  get-from-session
-                                 put-in-session!)])))
+                                 put-in-session!
+                                 redirect?
+                                 redirect-301
+                                 redirect-302
+                                 append-to-redirect-loc)])))
 
 (def *hash-delay* 1000)
 
@@ -30,30 +34,6 @@
 ;; Helpers - Pure Functions
 ;; ========================
 ;;
-
-(defn redirect-302 [page]
-  {:status 302
-   :headers {"Location" (cpath page)}
-   :body ""})
-
-(defn redirect-301 [url]
-  {:status 301
-   :headers {"Location" (cpath url)}})
-
-(defn redirect? [m]
-  (or (= (:status m) 302)
-      (= (:status m) 301)))
-
-(defn append-to-redirect-loc
-  "Append the uri-prefix to the value of Location in the headers of the
-   redirect map."
-  [m uri-prefix]
-  (if (or (nil? uri-prefix) (empty? uri-prefix))
-    m
-    (let [loc (remove-cpath ((:headers m) "Location"))]
-      (if (re-matches #".*://.*" loc)
-        m
-        (merge m {:headers {"Location" (cpath (str uri-prefix loc))}})))))
 
 (defn- redirect-to-permission-denied [uri-prefix]
   (redirect-302 (str uri-prefix "/permission-denied")))
@@ -113,13 +93,14 @@
             (vector? role-part) (role-set (first role-part))
             (set? role-part) role-part))))
 
+(defn intersect-exists? [s1 s2]
+  (not (empty? (intersection s1 s2))))
+
 (defn allow-access?
-  "Does user-roles plus any contain any of the roles in required-roles?"
+  "Does user-roles plus :any contain any of the roles in required-roles?"
   [required-roles user-roles]
   (if required-roles
-    (not (empty? (clojure.set/intersection (set
-                                            (conj user-roles :any))
-                                           required-roles)))
+    (intersect-exists? (set (conj user-roles :any)) required-roles)
     false))
 
 (defn auth-required?
@@ -186,7 +167,29 @@
                      (current-user-roles (first args))
                      (current-user-roles))
         roles (if (map? (first args)) (rest args) args)]
-    (not (empty? (intersection user-roles (set roles))))))
+    (intersect-exists? user-roles (set roles))))
+
+(defn access-error
+  ([] (access-error "Access Denied!"))
+  ([n] (kit/raise *access-error* n)))
+
+(defn authentication-error
+  ([] (authentication-error "No Authenticated User!"))
+  ([n] (kit/raise *authentication-error* n)))
+
+(defmacro ensure-authenticated [& body]
+  `(if *current-user*
+     (do ~@body)
+     (authentication-error)))
+
+(defmacro ensure-any-role [roles & body]
+  `(ensure-authenticated
+    (if (apply any-role-granted? ~roles)
+      (do ~@body)
+      (access-error (str "The user "
+                         (current-username)
+                         " is not in one of "
+                         ~roles)))))
 
 (defn with-secure-channel
   "Middleware function to redirect to either a secure or insecure channel."
