@@ -16,11 +16,13 @@ h2. Motivation
 
 There is one major difference in philosophy between this project and Compojure or Ring. The main focus of this library is stateful web applications. There is not one right way to create a web application. Different applications have different requirements. Some benefit from a more stateful approach. But you will say, stateful does not scale? It does scale, it's just not as easy. The Compojure/Ring approach is more stateless and restful. Which is good for some applications. You can see this in the way sessions are implemented. They have chosen a functional style of session management. If your application is more stateful then it can sometimes be awkward to work with.
 
-<img src="http://www.drawbacksolutions.com/images/fpl/ring-sessions.png">
+<img src="http://www.drawbacksolutions.com/images/fpl/ring-sessions.png" 
+     alt="Ring Sessions" />
 
 This library thinks of sessions that are more like your database except faster and without all of the database pain. You should be able to get something from and put something in the session from anywhere in your application. Working with the session should be orthogonal to the request response cycle.
 
-<img src="http://www.drawbacksolutions.com/images/fpl/sandbar-sessions.png">
+<img src="http://www.drawbacksolutions.com/images/fpl/sandbar-sessions.png" 
+     alt="Sandbar Sessions" />
 
 In the past you have had a few choices as to where you would put session data. You can store it in memory, in a cookie or in your database. There is a problem with each of these. In memory does not scale. In a cookie you have limited space. In the database is too much work and too slow. Also, session data is transient. You usually only need it for a short period of time. It just seems wrong to mix this into your system of record.
 
