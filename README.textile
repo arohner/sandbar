@@ -151,7 +151,7 @@ Once again from the reference application, here is an example of how to use this
 
 h4. Authentication function
 
-In the above example I use the <code>basic-auth</code> authentication function from the namespace <code>sandbar.basic_authentication</code>. Authentication functions are a function of the request that return either a valid user or a redirect. This means that you can easily create your own authentication function. A valid user is a map that contains at least two things: a :name key that maps to a user's username and a :roles key that maps to the set of roles that this user belongs to. The role keys that are used in this set must match the roles that are used in your configuration.
+In the above example I use the <code>basic-auth</code> authentication function from the namespace <code>sandbar.basic_authentication</code>. Authentication functions are a function of the request that return either a valid user or a redirect. This means that you can easily create your own authentication function. A valid user is a map that contains at least two things: a :name key that maps to a user's username and a :roles key that maps to the set of roles that this user belongs to. The role keywords that are used in this set must match the role keywords that are used in your configuration.
 
 The <code>basic-auth</code> function here will redirect the user to a login form.
 
@@ -176,7 +176,7 @@ h4. Authorization Errors
 
 You may use the functions above to determine if the current user is allowed to access data. When you discover that a user is not authenticated or that a user does not have the correct role you may use <code>access-error</code> or <code>authorization-error</code> to raise an error. If an <code>access-error</code> is raised then the user will be redirected to the access denied page. If an <code>authorization-error</code> is raised the your authorization function will be called. If your authentication function returns a valid user then that user will be put in the session and the handler function will be called again.
 
-There are also two macros to that make this even easier. They are <code>ensure-authenticated</code> and <code>ensure-any-role</code>. For example:
+There are also two macros which make this even easier. They are <code>ensure-authenticated</code> and <code>ensure-any-role</code>. For example:
  
 <pre>
 <code>
@@ -185,7 +185,7 @@ There are also two macros to that make this even easier. They are <code>ensure-a
 </code>
 </pre>
 
-This will check to ensure that the <code>*current-user*</code> is authenticated and it not then it will not order the jacket but will raise an authentication error.
+This will ensure that the <code>*current-user*</code> is authenticated, raising an authentication error if she is not and processing the order if she is.
 
 <pre>
 <code>
@@ -194,7 +194,7 @@ This will check to ensure that the <code>*current-user*</code> is authenticated 
 </code>
 </pre>
 
-<code>ensure-any-role</code> will first ensure that that the <code>*current-user*</code> is authenticated. If not it will raise an authentication error. It will then ensure that the <code>*current-user*</code> is in one of the roles. If not then it will raise an access error.
+<code>ensure-any-role</code> will first ensure that the <code>*current-user*</code> is authenticated. If not it will raise an authentication error. It will then ensure that the <code>*current-user*</code> is in one of the roles. If not then it will raise an access error.
 
 h4. TODO
 
