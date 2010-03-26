@@ -1,6 +1,6 @@
 h1. Sandbar
 
-Sandbar is a library for web applications built on top of Compojure and Ring. It contains (will contain) code to help with: 
+Sandbar is a library for web applications built on top of Compojure and Ring. It contains (or will contain) code to help with: 
 
 * Scaling server side state
 * Tables which may be filtered, sorted and paged
@@ -10,9 +10,21 @@ Sandbar is a library for web applications built on top of Compojure and Ring. It
 * CSS builder
 * Some kind of interface to Lucene (Solr)
 
-The project contains the library code as well a reference application which uses it.
+The project contains the library code as well as a reference application which uses it.
 
-I am creating this library for my own benefit and will be using it in all future web applications that I create. Therefore I will only be focusing on the things that I think will make me most productive.
+h2. Motivation
+
+There is one major difference in philosophy between this project and Compojure or Ring. The main focus of this library is stateful web applications. There is not one right way to create a web application. Different applications have different requirements. Some benefit from a more stateful approach. But you will say, stateful does not scale? It does scale, it's just not as easy. The Compojure-Ring approach is more stateless and restful. Which is good for some applications. You can see this in the way sessions are implemented. They have chosen a functional style of session management. If your application is more stateful then it can sometimes be awkward to work with.
+
+<img src="public/images/ring-session.png">
+
+This library thinks of sessions that are more like your database except faster and without all of the database pain. You should be able to get something from and put something in the session from anywhere in your application. Working with the session should be orthogonal to the request response cycle.
+
+<img src="public/images/sandbar-session.png">
+
+In the past you have had a few choices as to where you would put session data. You can store it in memory, in a cookie or in your database. There is a problem with each of these. In memory does not scale. In a cookie you have limited space. In the database is too much work and too slow. Also, session data is transient. You usually only need it for a short period of time. It just seems wrong to mix this into your system of record.
+
+The approach that I am advocating it to store session data in a memory-only, schema-free database. This library will have a simple interface to the session. For small applications the session will be stored in an atom in memory. When you need to start scaling you can switch to client-server mode without having to change any of your code. In client-server mode, the interface will handle sending and retrieving data from the session database. Because we are using an in-memory database it will be fast and because it is schema-free we will be able to store arbitrary maps without a lot of configuration.
 
 h2. Running the reference application
 
@@ -144,7 +156,8 @@ This will check to ensure that the <code>*current-user*</code> is authenticated 
 
 h4. TODO
 
-* Use Compojure's security functions. (How did I miss that?) Where did they go in 0.4.0.
+* Upgrade to Compojure 0.4.0. With the new refactor, do you even want to use Compojure? Maybe just Ring?
+* Use Compojure's security functions. (How did I miss that?) Where did they go in 0.4.0?
 * How about some error handling code!!
 * Should be able to configure a default login redirect page. For when a user logs in but there is no redirect page in the session
 * Create a new version of app.clj that does not have URI based authentication but does secure data in the model.
