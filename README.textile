@@ -21,9 +21,7 @@ There is one major difference in philosophy between this project and Compojure o
 <img src="http://www.drawbacksolutions.com/images/fpl/ring-sessions.png" 
      alt="Ring Sessions" />
 </td></tr>
-<tr><td>
-Figure 1: *Compojure/Ring Sessions*
-</td></tr>
+<tr><td>*Figure 1:* Compojure/Ring Sessions</td></tr>
 </table>
 
 
