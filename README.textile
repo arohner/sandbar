@@ -27,8 +27,13 @@ There is one major difference in philosophy between this project and Compojure o
 
 This library thinks of sessions that are more like your database except faster and without all of the database pain. You should be able to get something from and put something in the session from anywhere in your application. Working with the session should be orthogonal to the request response cycle.
 
-<img src="http://www.drawbacksolutions.com/images/fpl/sandbar-sessions.png" 
-     alt="Sandbar Sessions" />
+<table align="center">
+<tr><td>
+	<img src="http://www.drawbacksolutions.com/images/fpl/sandbar-sessions.png" 
+	     alt="Sandbar Sessions" />
+</td></tr>
+<tr><td>*Figure 2:* Sandbar Sessions</td></tr>
+</table>
 
 In the past you have had a few choices as to where you would put session data. You can store it in memory, in a cookie or in your database. There is a problem with each of these. In memory does not scale. In a cookie you have limited space. In the database is too much work and too slow. Also, session data is transient. You usually only need it for a short period of time. It just seems wrong to mix this into your system of record.
 
