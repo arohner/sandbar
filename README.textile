@@ -1,6 +1,8 @@
 h1. Sandbar
 
-Sandbar is a library for web applications built on top of Compojure and Ring. It contains (or will contain) code to help with: 
+"Install Leiningen":http://github.com/technomancy/leiningen
+
+Sandbar is a library for web applications built on top of "Compojure":http://github.com/weavejester/compojure and "Ring":http://github.com/mmcgrana/ring. It contains (or will contain) code to help with: 
 
 * Scaling server side state
 * Tables which may be filtered, sorted and paged
@@ -40,7 +42,7 @@ The approach that I am advocating is to store session data in a memory-only, sch
 
 Java application servers such as Tomcat have ways of storing and scaling session data. The problem with this approach is that if forces you to use "sticky" sessions. This means that once you start using one application sever you will continue to be routed to that server as long as it is running. If the server goes down, you will then be routed to a different server. Another way to scale session data is to use Terracotta. But again this requires "sticky" sessions.
 
-I believe that schema-free, in-memory database solution is better and easier to scale.
+I believe that a schema-free, in-memory database solution is better and easier to scale.
 
 Here is an example of how this would work in a situation with multiple application servers. Imagine that you are filling in a form which then gets validated and does not pass validation. You then want to redirect the user to the form and display error messages for each field. This involves two requests. The first is the initial form submission. This request is then redirected back to the form. This second request will display the form and any error messages. The form errors will be stored in the flash which is implemented on top of sessions. If you have multiple application servers and are not using "sticky" sessions then the second request may go to a different application server.
 
@@ -63,6 +65,8 @@ In Figure 3 we show the initial request. This is the form submission. The form i
 </table>
 
 In Figure 4 we see the redirect request. This request goes to a different application server (A2) which then loads the session data from the session server (S2). Depending on your needs, you will be able to configure any number of session servers and link them up however you want.
+
+I am thinking of using "FleetDB":http://github.com/mmcgrana/fleetdb as the session store.
 
 h2. Running the reference application
 
@@ -194,7 +198,7 @@ This will check to ensure that the <code>*current-user*</code> is authenticated 
 
 h4. TODO
 
-* Upgrade to Compojure 0.4.0. With the new refactor, do you even want to use Compojure? Maybe just Ring?
+* Upgrade to Compojure 0.4.0. With the new refactor, do you even want to use Compojure? Maybe just Ring 0.2.0?
 * Use Compojure's security functions. (How did I miss that?) Where did they go in 0.4.0?
 * How about some error handling code!!
 * Should be able to configure a default login redirect page. For when a user logs in but there is no redirect page in the session
@@ -207,12 +211,6 @@ There will be many dependencies between the parts of the project. Therefore I am
 h3. The reference application
 
 The reference application is currently easiest to get running with MySQL. I plan to change this to use Derby by default so that it will be easier for others to test drive.
-
-h3. Scaling server side state
-
-When server side state is needed by any part of the library it will not use Compojure's session management. A session interface will be included in the library. For small applications that don't need to scale, the session is implemented as an in-process atom. When you need to start scaling you can switch implementations to client-server based sessions. This will have the same interface as the in-process sessions but state will be stored in another process or on another machine. This allows you to have sessions that will scale when you need them to without having to use 'sticky' sessions or put transient session state in your system of record.
-
-The client-server model will have a very simple interface and be backed by "FleetDB":http://github.com/mmcgrana/fleetdb.
 
 h3. Tables which may be filtered, sorted and paged
 
@@ -228,7 +226,7 @@ Every application that I create needs to home some kind of user management GUI. 
 
 h3. CSS Builder
 
-Working with CSS on a large project always gets out of control. I want to be able to write my CSS as Clojure code. This currently does not exist.
+Working with CSS on a large project always gets out of control. I want to be able to write my CSS as Clojure code like "clj-html":http://github.com/mmcgrana/clj-html or "hiccup":http://github.com/weavejester/hiccup do for html. This currently does not exist.
 
 h2. License
 
