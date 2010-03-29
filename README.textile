@@ -1,5 +1,7 @@
 h1. Sandbar
 
+This branch currently does not work. I am in the middle of migrating to Compojure 0.4 an and Ring 2.0.
+
 Sandbar is a set of libraries for web applications which is designed to be used with "Compojure":http://github.com/weavejester/compojure and "Ring":http://github.com/mmcgrana/ring. It contains (or will contain) code to help with: 
 
 * Authorization and authentication
