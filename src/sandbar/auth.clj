@@ -7,7 +7,8 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.auth
-  (:use (clojure [set :only (intersection)])
+  (:use (ring.util [response :only (redirect)])
+        (clojure [set :only (intersection)])
         (clojure.contrib [error-kit :as kit])
         (sandbar [library :only (cpath
                                  remove-cpath
@@ -15,7 +16,6 @@
                                  put-in-session!
                                  redirect?
                                  redirect-301
-                                 redirect-302
                                  append-to-redirect-loc)])))
 
 (def *hash-delay* 1000)
@@ -36,10 +36,10 @@
 ;;
 
 (defn- redirect-to-permission-denied [uri-prefix]
-  (redirect-302 (str uri-prefix "/permission-denied")))
+  (redirect (str uri-prefix "/permission-denied")))
 
 (defn- redirect-to-authentication-error [uri-prefix]
-  (redirect-302 (str uri-prefix "/authentication-error")))
+  (redirect (str uri-prefix "/authentication-error")))
 
 (defn- params-str [request]
   (let [p (:query-string request)]

@@ -9,8 +9,8 @@
 (ns sandbar.userui
   (:use (sandbar library
                  [auth :only (hash-password)])
-        (compojure.http [helpers :only (redirect-to)]
-                        [routes :only (routes GET POST)])))
+        (ring.util [response :only (redirect)])
+        (compojure core)))
 
 (defn secure-user
   "Ensure that the user has a salt value associated with it and that if the
@@ -118,7 +118,7 @@
         submit (-> request :params :submit)
         success "list"
         failure (cpath (:uri request))]
-    (redirect-to
+    (redirect
      (cond (form-cancelled (:params request)) success
            (invalid-user?! props form-data request) failure
            :else (do
@@ -190,23 +190,23 @@
 
 (defn security-edit-user-routes [path-prefix layout name-fn props data-fns]
   (routes
-   (GET (str path-prefix "/user/list*")
+   (GET (str path-prefix "/user/list*") request
         (layout (name-fn request)
                 request
                 (user-list-page props (data-fns :load) request)))
-   (GET (str path-prefix "/user/new*")
+   (GET (str path-prefix "/user/new*") request
         (layout (name-fn request)
                 request
                 (edit-user-form data-fns props request)))
-   (POST (str path-prefix "/user/new*")
+   (POST (str path-prefix "/user/new*") request
          (save-user! data-fns props request))
-   (GET (str path-prefix "/user/edit*")
+   (GET (str path-prefix "/user/edit*") request
         (layout (name-fn request)
                 request
                 (edit-user-form data-fns props request)))
-   (POST (str path-prefix "/user/edit*")
+   (POST (str path-prefix "/user/edit*") request
          (save-user! data-fns props request))
-   (GET (str path-prefix "/user/delete*")
+   (GET (str path-prefix "/user/delete*") request
         (layout (name-fn request)
                 request
                 (confirm-delete (data-fns :lookup)
@@ -214,9 +214,9 @@
                                 (fn [u]
                                   (str (:first_name u) " " (:last_name u)))
                                 props
-                                (:id params))))
-   (POST (str path-prefix "/user/delete*")
+                                (:id (:params request)))))
+   (POST (str path-prefix "/user/delete*") {params :params}
          (do
            (if (not (form-cancelled params))
              ((data-fns :delete) :app_user (:id params)))
-           (redirect-to "list")))))
+           (redirect "list")))))

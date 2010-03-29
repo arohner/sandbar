@@ -8,6 +8,7 @@
 
 (ns sandbar.test_basic_authentication
   (:use [clojure.test]
+        (ring.util [response :only (redirect)])
         (sandbar library auth basic_authentication)
         [sandbar.test :only (t)]))
 
@@ -37,12 +38,12 @@
         (is (= (authenticate! test-login-load-fn
                               {}
                               {:params {:password "x"}})
-               [302 {:headers {"Location" "login"}}])))
+               (redirect "login"))))
      (t "with missing password"
         (is (= (authenticate! test-login-load-fn
                               {}
                               {:params {:username "u"}})
-               [302 {:headers {"Location" "login"}}])))
+               (redirect "login"))))
      (t "with correct password"
         (binding [session (atom {:x {:auth-redirect-uri "/test"}})]
           (let [result (authenticate! test-login-load-fn
@@ -51,7 +52,7 @@
                                        :params
                                        {:username "u" :password "test"}})]
             (is (= result
-                   [302 {:headers {"Location" "/test"}}]))
+                   (redirect "/test")))
             (is (= (-> @session
                        :x
                        (dissoc :last-access))
@@ -65,7 +66,7 @@
                                        :params
                                        {:username "u" :password "wrong"}})]
             (is (= result
-                   [302 {:headers {"Location" "login"}}]))
+                   (redirect "login")))
             (is (= (-> @session
                        :x
                        (dissoc :last-access))

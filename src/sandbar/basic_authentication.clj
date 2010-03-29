@@ -7,24 +7,27 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.basic_authentication
-  (:use (sandbar auth library)
-        (compojure.http [routes :only (routes GET POST)]
-                        [helpers :only (redirect-to)])))
+  (:use (compojure core)
+        (ring.util [response :only (redirect)])
+        (sandbar auth library)))
 
 (defn basic-auth [request]
   (do (put-in-session! request
                        :auth-redirect-uri
                        (:uri request))
-      (redirect-302 "/login")))
+      (redirect "/login")))
 
 (defn create-login-from-params
   "Create a map of all login info to verify the identity of this user."
   [load-fn request]
+  (println request)
   (let [params (:params request)
-        form-data (-> (select-keys params [:username :password]))
-        user (first (load-fn :app_user {:username (:username form-data)} {}))
+        form-data (-> (select-keys params ["username" "password"]))
+        user (first (load-fn :app_user
+                             {:username (get form-data "username")} {}))
         roles (index-by :id (load-fn :role))]
-    (-> form-data
+    (-> {:username (get form-data "username")
+         :password (get form-data "password")}
         (assoc :password-hash (:password user))
         (assoc :salt (:salt user))
         (assoc :roles (set
@@ -66,7 +69,8 @@
   (let [user-data (create-login-from-params load-fn request)
         success (get-from-session request :auth-redirect-uri)
         failure "login"]
-    (redirect-to
+    (println user-data)
+    (redirect
      (cond (invalid-login?! props user-data request) failure
            (not (valid-password? user-data)) failure
            :else (do
@@ -80,7 +84,7 @@
   (let [logout-page (if-let [p (:logout-page props)]
                       (cpath p)
                       (cpath "/"))]
-    (redirect-to
+    (redirect
      (do (remove-from-session! request :current-user)
          logout-page))))
 
@@ -91,11 +95,11 @@
 
 (defn security-login-routes [path-prefix layout name-fn props data-fns]
   (routes
-   (GET (str path-prefix "/login*")
+   (GET (str path-prefix "/login*") request
         (layout (name-fn request)
                 request
                 (login-page props request)))
-   (POST (str path-prefix "/login*")
+   (POST (str path-prefix "/login*") request
          (authenticate! (data-fns :load) props request))
-   (GET (str path-prefix "/logout*")
+   (GET (str path-prefix "/logout*") request
         (logout! props request))))

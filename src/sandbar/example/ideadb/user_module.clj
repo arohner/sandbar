@@ -1,25 +1,26 @@
-; Copyright (c) Brenton Ashworth. All rights reserved.
-; The use and distribution terms for this software are covered by the
-; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-; which can be found in the file COPYING at the root of this distribution.
-; By using this software in any fashion, you are agreeing to be bound by
-; the terms of this license.
-; You must not remove this notice, or any other, from this software.
+;; Copyright (c) Brenton Ashworth. All rights reserved.
+;; The use and distribution terms for this software are covered by the
+;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;; which can be found in the file COPYING at the root of this distribution.
+;; By using this software in any fashion, you are agreeing to be bound by
+;; the terms of this license.
+;; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.example.ideadb.user_module
-  (:use [compojure.html]
-        [compojure.http [routes :only (defroutes GET POST)]
-                        [helpers :only (redirect-to)]
-                        [session :only (flash-assoc)]]
+  (:use (hiccup core)
+        (compojure core)
+        (ring.util [response :only (redirect)])
         (sandbar library
-                    [auth :only (current-username
-                                 current-user-roles
-                                 any-role-granted?)])
+                 [auth :only (current-username
+                              current-user-roles
+                              any-role-granted?)])
         (sandbar.example.ideadb
          [layouts :only (main-layout list-layout form-layout)]
          [model])))
 
-(set-app-context! "/ideadb")
+;; Haven't yet figured out how to deal with context paths in the new
+;; version of Compojure + Ring
+#_(set-app-context! "/ideadb")
 
 (def properties
      {:business_unit "Business Unit"
@@ -210,7 +211,7 @@
                   (cpath "/idea/new")
                   (cpath "/idea/list"))
         failure (cpath (str "/idea/" action))]
-    (redirect-to
+    (redirect
      (cond (form-cancelled (:params request)) success
            (invalid-idea?! form-data request) failure
            :else (do
@@ -234,19 +235,23 @@
     (handler request)))
 
 (defroutes user-module-routes
-  (GET "/" (redirect-to (cpath "/idea/list")))
-  (GET "/idea/status" (main-layout "Home" request (index request)))
-  (GET "/idea/new*" (form-layout "New Idea Form"
-                                  request
-                                  (new-idea-form request)))
-  (POST "/idea/new*" (save-idea! request "new"))
-  (GET "/idea/list*" (if (or (admin-role? request)
-                             (user-has-ideas? request))
-                       (list-layout "Idea List"
-                                    request
-                                    (idea-list request))
-                       (redirect-to (cpath "/idea/new"))))
-  (GET "/idea/permission-denied" (main-layout "Permission Denied"
-                                         request
-                                         (permission-denied-page))))
+  (GET "/" [] (redirect (cpath "/idea/list")))
+  (GET "/idea/status" request
+       (main-layout "Home" request (index request)))
+  (GET "/idea/new*" request
+       (form-layout "New Idea Form"
+                    request
+                    (new-idea-form request)))
+  (POST "/idea/new*" request (save-idea! request "new"))
+  (GET "/idea/list*" request
+       (if (or (admin-role? request)
+               (user-has-ideas? request))
+         (list-layout "Idea List"
+                      request
+                      (idea-list request))
+         (redirect (cpath "/idea/new"))))
+  (GET "/idea/permission-denied" request
+       (main-layout "Permission Denied"
+                    request
+                    (permission-denied-page))))
 

@@ -8,6 +8,7 @@
 
 (ns sandbar.test_auth
   (:use [clojure.test]
+        (ring.util [response :only (redirect)])
         (sandbar library auth basic_authentication)
         [sandbar.test :only (t)]))
 
@@ -204,13 +205,13 @@
                (let [result ((with-security basic-auth)
                              {:session {:id "x"} :uri "/admin/page"})]
                  (is (= result
-                        (redirect-302 "/login")))
+                        (redirect "/login")))
                  (is (= (-> @session :x :auth-redirect-uri)
                         "/admin/page"))))
             (t "redirect to login with a uri-prefix"
                (is (= ((with-security basic-auth "/prefix")
                        {:session {:id "x"} :uri "/admin/page"})
-                      (redirect-302 "/prefix/login"))))
+                      (redirect "/prefix/login"))))
             (t "allow access when auth is not required"
                (is (= ((with-security basic-auth)
                        {:uri "/test.css"})
@@ -218,7 +219,7 @@
             (t "and some other kind of auth, redirect to PD when not in role"
                (is (= ((with-security (fn [r] {:roles #{:user}}))
                        {:uri "/admin/page"})
-                      (redirect-302 "/permission-denied"))))
+                      (redirect "/permission-denied"))))
             (t "and some other kind of auth, allow access when in role"
                (is (= ((with-security (fn [r] {:roles #{:user}}))
                        {:uri "/some/page"})
@@ -228,7 +229,7 @@
             (t "redirect to permission denied when valid user without role"
                (is (= ((with-security basic-auth)
                        {:session {:id "x"} :uri "/admin/page"})
-                      (redirect-302 "/permission-denied"))))
+                      (redirect "/permission-denied"))))
             (t "allow access when user is in correct role"
                (is (= ((with-security basic-auth)
                        {:session {:id "x"} :uri "/some/page"})
@@ -242,14 +243,14 @@
                          []
                          basic-auth)
                        {:session {:id "x"} :uri "/x"})
-                      (redirect-302 "/permission-denied"))))
+                      (redirect "/permission-denied"))))
             (t "redirect to login when authorization exception is thrown"
                (is (= ((with-security
                          (fn [r] (authentication-error "testing with-security"))
                          []
                          basic-auth)
                        {:session {:id "x"} :uri "/x"})
-                      (redirect-302 "/login"))))
+                      (redirect "/login"))))
             (binding [session (atom {:x {}})]
               (t "redirect to authentication error page when in auth-err loop"
                 (is (= ((with-security
@@ -259,7 +260,7 @@
                           []
                           (fn [r] {:name "t" :roles #{:user}}))
                         {:session {:id "x"} :uri "/x"})
-                       (redirect-302 "/authentication-error")))))
+                       (redirect "/authentication-error")))))
             (binding [session (atom {:x {}})]
               (t "access page when authentication is successfull"
                 (is (= ((with-security
@@ -277,7 +278,7 @@
                            []
                            (fn [r] {:name "t" :roles #{:user}}))
                          {:session {:id "x"} :uri "/x"})
-                        (redirect-302 "/permission-denied")))))
+                        (redirect "/permission-denied")))))
             (binding [session (atom {:x {}})]
               (t "access allowed using ensure-any-role"
                  (is (= ((with-security

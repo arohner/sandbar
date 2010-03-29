@@ -7,8 +7,7 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.example.ideadb.layouts
-  (:use [compojure.html]
-        [compojure.str-utils :only (capitalize)]
+  (:use (hiccup core page-helpers)
         [sandbar.library]
         (sandbar [auth :only (current-user
                               current-username

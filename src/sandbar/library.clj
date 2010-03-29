@@ -7,15 +7,19 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.library
-  (:use [compojure.html]
-        [compojure.http.helpers :only (redirect-to)]
+  (:use (hiccup core page-helpers form-helpers)
+        (ring.util [response :only (redirect)]
+                   [codec :only (url-encode)])
         [clojure.contrib.str-utils :only (re-split re-partition)]))
-
 
 ;;
 ;; Util
 ;; ====
 ;;
+
+;; could not find this in new 0.4.0 Compojure
+(defn capitalize [s]
+  s)
 
 (defn random-between [lo hi]
   (let [r (java.util.Random.)
@@ -90,9 +94,9 @@
 ;;
 
 ; Standard project layout
-(def css-path "/public/css/")
-(def image-path "/public/images/")
-(def js-path "/public/js/")
+(def css-path "/css/")
+(def image-path "/images/")
+(def js-path "/js/")
 
 (defn cpath [path]
   (if (.startsWith path "/")
@@ -134,11 +138,6 @@
   ([path name mouseover attrs]
      (link-to (str (cpath path)) (image name mouseover attrs))))
 
-(defn redirect-302 [page]
-  {:status 302
-   :headers {"Location" (cpath page)}
-   :body ""})
-
 (defn redirect-301 [url]
   {:status 301
    :headers {"Location" (cpath url)}})
@@ -168,27 +167,36 @@
 ;; then you can move that database to another server.
 ;;
 
+;; TODO - After you fix the unit tests, remove the old method of
+;; session lookup
+(defn session-id [request]
+  (if-let [session (-> request :session :id)]
+    session
+    (:value (get (:cookies request) "ring-session"))))
+
 (def application-flash (atom {}))
 
 (defn set-flash-value!
   ([id v]
      (swap! application-flash (fn [a b] (merge a {id b})) v))
   ([k v request]
-     (let [id (str (-> request :session :id) "-" k)]
+     (let [id (str (session-id request) "-" k)]
        (set-flash-value! id v))))
 
 (defn get-flash-value! [key request]
-  (let [id (str (-> request :session :id) "-" key)
+  (let [id (str (session-id request) "-" key)
         value (@application-flash id)]
     (if value
       (do
         (swap! application-flash (fn [a b] (dissoc a b)) id)
         value))))
 
-;; Change this to be the session
+;;
+;; Begin Remove Old Session Management
+;;
+
 (def session (atom {}))
 
-;; Change this to clean up the session
 (defn clean-up-session!
   "Remove table states that have not been used within the last 12 hours."
   []
@@ -205,7 +213,7 @@
            cutoff)))
 
 (defn update-session! [request update-fn value]
-  (let [id (keyword (-> request :session :id))]
+  (let [id (keyword (session-id request))]
     (swap! session
           (fn [a b]
             (let [result (update-fn a b)]
@@ -216,11 +224,11 @@
   @session)
 
 (defn put-in-session! [request k v]
-  (let [id (keyword (-> request :session :id))]
+  (let [id (keyword (session-id request))]
     (update-session! request (fn [a b] (assoc-in a [id k] b)) v)))
 
 (defn get-from-session [request k]
-  (let [id (if-let [id (-> request :session :id)]
+  (let [id (if-let [id (session-id request)]
              (keyword id)
              nil)]
     (if id
@@ -228,8 +236,12 @@
       nil)))
 
 (defn remove-from-session! [request k]
-  (let [id (keyword (-> request :session :id))]
+  (let [id (keyword (session-id request))]
     (update-session! request (fn [a b] (update-in a [id] #(dissoc % k))) nil)))
+
+;;
+;; End Remove Old Session Management
+;;
 
 ;;
 ;; Validation
@@ -288,7 +300,7 @@
                     (map #(vector % (m %)) order))))))
 
 (defn update-table-state! [table-name request]
-  (let [id (keyword (-> request :session :id))
+  (let [id (keyword (session-id request))
         params (:params request)]
     (-> (update-session!
          request
@@ -418,7 +430,7 @@
     data (cycle ["odd" "even"]))])
 
 (defn get-table-state [request table-name]
-  (let [id (keyword (-> request :session :id))
+  (let [id (keyword (session-id request))
         t-state (-> @session id :table-state table-name)]
     t-state))
 
@@ -905,7 +917,7 @@
 
 (defn list-updater [save-fn delete-by-id-fn type request params]
   (let [action (params :*)]
-    (redirect-to
+    (redirect
      (cond (form-cancelled params) "list"
            (.startsWith action "/add")
            (save-list-item save-fn

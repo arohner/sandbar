@@ -7,11 +7,9 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.example.ideadb.admin_module
-  (:use [compojure.control :only (decorate)]
-        [compojure.html]
-        [compojure.http [routes :only (defroutes GET POST)]
-                        [helpers :only (redirect-to)]
-                        [session :only (flash-assoc)]]
+  (:use (hiccup core)
+        (compojure core)
+        (ring.util [response :only (redirect)])
         (sandbar library auth basic_authentication userui)
         (sandbar.example.ideadb
          [layouts :only (main-layout form-layout)]
@@ -89,51 +87,55 @@
                                   delete-by-id)
             (delete-by-id type id)))))
 
+;; TODO - Clean this up
 (defroutes admin-module-routes
-  (GET "/idea/edit*" (form-layout "Edit Idea Form"
-                                  request
-                                  (edit-idea-form request params)))
-  (POST "/idea/edit*"
-        (save-idea! request (str "edit?id=" (:id params))))
-  (GET "/idea/delete*" (form-layout "Confirm Delete Idea"
-                                    request
-                                    (confirm-delete find-by-id
-                                                    :idea
-                                                    properties
-                                                    (:id params))))
-  (POST "/idea/delete*"
+  (GET "/idea/edit*" request (form-layout "Edit Idea Form"
+                                          request
+                                          (edit-idea-form request
+                                                          (:params request))))
+  (POST "/idea/edit*" request
+        (save-idea! request (str "edit?id=" (:id (:params request)))))
+  (GET "/idea/delete*" request
+       (form-layout "Confirm Delete Idea"
+                    request
+                    (confirm-delete find-by-id
+                                    :idea
+                                    properties
+                                    (:id (:params request)))))
+  (POST "/idea/delete*" {params :params}
         (do
           (if (not (form-cancelled params))
             (delete-by-id :idea (:id params)))
-          (redirect-to "list")))
-  (GET "/admin/list*" (main-layout "Administrator"
-                                   request
-                                   (admin-menu request)))
-  (GET "/admin/business-unit*"
+          (redirect "list")))
+  (GET "/admin/list*" request
+       (main-layout "Administrator"
+                    request
+                    (admin-menu request)))
+  (GET "/admin/business-unit*" request
        (main-layout "Edit Business Units"
                     request
-                    (my-list-editor :business_unit request params)))
-  (POST "/admin/business-unit*"
-        (my-list-updater :business_unit request params))
-  (GET "/admin/category*"
+                    (my-list-editor :business_unit request (:params request))))
+  (POST "/admin/business-unit*" request
+        (my-list-updater :business_unit request (:params request)))
+  (GET "/admin/category*" request
        (main-layout "Edit Categories"
                     request
-                    (my-list-editor :idea_category request params)))
-  (POST "/admin/category*"
-        (my-list-updater :idea_category request params))
-  (GET "/admin/status*"
+                    (my-list-editor :idea_category request (:params request))))
+  (POST "/admin/category*" request
+        (my-list-updater :idea_category request (:params request)))
+  (GET "/admin/status*" request
        (main-layout "Edit Status List"
                     request
-                    (my-list-editor :idea_status request params)))
-  (POST "/admin/status*"
-        (my-list-updater :idea_status request params))
-  (GET "/admin/type*"
+                    (my-list-editor :idea_status request (:params request))))
+  (POST "/admin/status*" request
+        (my-list-updater :idea_status request (:params request)))
+  (GET "/admin/type*" request
        (main-layout "Edit Types"
                     request
-                    (my-list-editor :idea_type request params)))
-  (POST "/admin/type*"
-        (my-list-updater :idea_type request params))
-  (GET "/idea/download*"
+                    (my-list-editor :idea_type request (:params request))))
+  (POST "/admin/type*" request
+        (my-list-updater :idea_type request (:params request)))
+  (GET "/idea/download*" []
        [{:headers {"Content-Type" "application/vnd.ms-excel"
                    "Content-disposition"
                    "attachment;filename=\"ideadb.csv\""}} 
