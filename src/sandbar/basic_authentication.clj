@@ -9,12 +9,11 @@
 (ns sandbar.basic_authentication
   (:use (compojure core)
         (ring.util [response :only (redirect)])
-        (sandbar auth library)))
+        (sandbar auth library stateful-session)))
 
 (defn basic-auth [request]
-  (do (put-in-session! request
-                       :auth-redirect-uri
-                       (:uri request))
+  (do (session-put! :auth-redirect-uri
+                    (:uri request))
       (redirect "/login")))
 
 (defn create-login-from-params
@@ -67,25 +66,24 @@
 
 (defn authenticate! [load-fn props request]
   (let [user-data (create-login-from-params load-fn request)
-        success (get-from-session request :auth-redirect-uri)
+        success (session-get :auth-redirect-uri)
         failure "login"]
     (println user-data)
     (redirect
-     (cond (invalid-login?! props user-data request) failure
+     (cond (invalid-login?! props user-data) failure
            (not (valid-password? user-data)) failure
            :else (do
-                   (put-user-in-session! request
-                                         {:name (:username user-data)
+                   (put-user-in-session! {:name (:username user-data)
                                           :roles (:roles user-data)})
-                   (remove-from-session! request :auth-redirect-uri)
+                   (session-delete-key! :auth-redirect-uri)
                    success)))))
 
-(defn logout! [props request]
+(defn logout! [props]
   (let [logout-page (if-let [p (:logout-page props)]
                       (cpath p)
                       (cpath "/"))]
     (redirect
-     (do (remove-from-session! request :current-user)
+     (do (session-delete-key! :current-user)
          logout-page))))
 
 ;;

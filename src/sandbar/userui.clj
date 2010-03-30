@@ -8,6 +8,7 @@
 
 (ns sandbar.userui
   (:use (sandbar library
+                 stateful-session
                  [auth :only (hash-password)])
         (ring.util [response :only (redirect)])
         (compojure core)))
@@ -124,8 +125,7 @@
            :else (do
                    (save-or-update-fn (dissoc form-data :new_password))
                    (set-flash-value! :user-message
-                                     "User has been saved."
-                                     request)
+                                     "User has been saved.")
                    success)))))
 
 ;;

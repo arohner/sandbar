@@ -9,7 +9,7 @@
 (ns sandbar.example.ideadb.test_user_module
   (:use [clojure.test]
         [sandbar.example.ideadb.user_module]
-        [sandbar.library]
+        (sandbar library stateful-session)
         [sandbar.test :only (t)]))
 
 (defn test-request [params]
@@ -21,7 +21,7 @@
                  :originator nil, :description nil, :category nil})
 
 (deftest test-create-idea-from-params
-  (binding [session (atom {:x {:current-user {:name "t"}}})]
+  (binding [*session* (atom {:current-user {:name "t"}})]
     (t "create idea from params"
        (t "when params are empty"
           (is (= (create-idea-from-params (test-request {}))

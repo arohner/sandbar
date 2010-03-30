@@ -13,7 +13,8 @@
         (sandbar library
                  [auth :only (current-username
                               current-user-roles
-                              any-role-granted?)])
+                              any-role-granted?)]
+                 stateful-session)
         (sandbar.example.ideadb
          [layouts :only (main-layout list-layout form-layout)]
          [model])))
@@ -55,8 +56,8 @@
   (html 
    [:div "This is the front page of the app. Here is your environment:"
     [:br] [:br]
-    [:div "User : " (current-username request)]
-    [:div "Role : " (current-user-roles request)]
+    [:div "User : " (current-username)]
+    [:div "Role : " (current-user-roles)]
     [:div "classname : " (request-att request "classname")]
     [:div "subprotocol : " (request-att request "subprotocol")]
     [:div "subname : " (request-att request "subname")]
@@ -72,12 +73,12 @@
 ;;
 
 (defn admin-role? [request]
-  (any-role-granted? request :admin))
+  (any-role-granted? :admin))
 
 (defn generate-welcome-message [request]
   (if (not (admin-role? request))
     [:div {:id "welcome-message"}
-     (str "Welcome " (current-username request)
+     (str "Welcome " (current-username)
           "! The table below displays all of the ideas you have submitted.")]))
 
 (def idea-table-columns
@@ -98,7 +99,7 @@
     (fn [type filters sort-and-page]
       (filter-and-sort-records type
                                (merge filters
-                                      {:user_id (current-username request)})
+                                      {:user_id (current-username)})
                                sort-and-page))))
 
 (defn user-has-ideas? [request]
@@ -184,8 +185,8 @@
                (if (empty? de) (date-string) de)
                (date-string))
         user (if-let [u (:user_id idea)]
-               (if (empty? u) (current-username request) u)
-               (current-username request))
+               (if (empty? u) (current-username) u)
+               (current-username))
         idea (-> idea
                  (assoc :date_entered date)
                  (assoc :user_id user)
@@ -219,8 +220,7 @@
                                      (if (= action "new")
                                        "Your idea has been successfully
                                         submitted."
-                                       "The idea has been updated.")
-                                     request)
+                                       "The idea has been updated."))
                    (save form-data)
                    success)))))
 

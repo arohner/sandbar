@@ -1,15 +1,16 @@
-; Copyright (c) Brenton Ashworth. All rights reserved.
-; The use and distribution terms for this software are covered by the
-; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-; which can be found in the file COPYING at the root of this distribution.
-; By using this software in any fashion, you are agreeing to be bound by
-; the terms of this license.
-; You must not remove this notice, or any other, from this software.
+;; Copyright (c) Brenton Ashworth. All rights reserved.
+;; The use and distribution terms for this software are covered by the
+;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;; which can be found in the file COPYING at the root of this distribution.
+;; By using this software in any fashion, you are agreeing to be bound by
+;; the terms of this license.
+;; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.library
   (:use (hiccup core page-helpers form-helpers)
         (ring.util [response :only (redirect)]
                    [codec :only (url-encode)])
+        (sandbar stateful-session)
         [clojure.contrib.str-utils :only (re-split re-partition)]))
 
 ;;
@@ -76,7 +77,6 @@
 
 (defn property-lookup [p k]
   (k p (name k)))
-
 
 ;;
 ;; State
@@ -157,102 +157,15 @@
         m
         (merge m {:headers {"Location" (cpath (str uri-prefix loc))}})))))
 
-
-;;
-;; Flash & Session
-;; ===============
-;;
-;; This is currently server side state. In the future you can use your
-;; in memory database to keep this information. If you need to scale
-;; then you can move that database to another server.
-;;
-
-;; TODO - After you fix the unit tests, remove the old method of
-;; session lookup
-(defn session-id [request]
-  (if-let [session (-> request :session :id)]
-    session
-    (:value (get (:cookies request) "ring-session"))))
-
-(def application-flash (atom {}))
-
-(defn set-flash-value!
-  ([id v]
-     (swap! application-flash (fn [a b] (merge a {id b})) v))
-  ([k v request]
-     (let [id (str (session-id request) "-" k)]
-       (set-flash-value! id v))))
-
-(defn get-flash-value! [key request]
-  (let [id (str (session-id request) "-" key)
-        value (@application-flash id)]
-    (if value
-      (do
-        (swap! application-flash (fn [a b] (dissoc a b)) id)
-        value))))
-
-;;
-;; Begin Remove Old Session Management
-;;
-
-(def session (atom {}))
-
-(defn clean-up-session!
-  "Remove table states that have not been used within the last 12 hours."
-  []
-  (let [now (.getTime (java.util.Date.))
-        cutoff (- now (* 1000 60 60 12))]
-    (swap! session
-           (fn [a b]
-             (let [remove-keys
-                   (map first
-                        (filter #(< (last %) b)
-                                (map #(vector (key %) (:last-access (val %)))
-                                     @session)))]
-               (apply dissoc a remove-keys)))
-           cutoff)))
-
-(defn update-session! [request update-fn value]
-  (let [id (keyword (session-id request))]
-    (swap! session
-          (fn [a b]
-            (let [result (update-fn a b)]
-              (assoc-in result [id :last-access]
-                        (.getTime (java.util.Date.)))))
-          value))
-  (future (clean-up-session!))
-  @session)
-
-(defn put-in-session! [request k v]
-  (let [id (keyword (session-id request))]
-    (update-session! request (fn [a b] (assoc-in a [id k] b)) v)))
-
-(defn get-from-session [request k]
-  (let [id (if-let [id (session-id request)]
-             (keyword id)
-             nil)]
-    (if id
-      (-> @session id k)
-      nil)))
-
-(defn remove-from-session! [request k]
-  (let [id (keyword (session-id request))]
-    (update-session! request (fn [a b] (update-in a [id] #(dissoc % k))) nil)))
-
-;;
-;; End Remove Old Session Management
-;;
-
 ;;
 ;; Validation
 ;; ==========
 ;;
 
-(defn invalid? [name validation-fn props form-data request]
+(defn invalid? [name validation-fn props form-data]
   (if-let [errors (validation-fn props form-data)]
     (do (set-flash-value! name
-                          (merge {:form-data form-data} errors)
-                          request)
+                          (merge {:form-data form-data} errors))
         true)
     false))
 
@@ -264,10 +177,10 @@
 ;; =====
 ;;
 
-(defn get-filters-from-url [url]
+#_(defn get-filters-from-url [url]
   {})
 
-(defn get-sort-and-page-from-url [url]
+#_(defn get-sort-and-page-from-url [url]
   (reduce
    (fn [a b]
      (merge-with concat a
@@ -300,14 +213,12 @@
                     (map #(vector % (m %)) order))))))
 
 (defn update-table-state! [table-name request]
-  (let [id (keyword (session-id request))
-        params (:params request)]
+  (let [params (:params request)]
     (-> (update-session!
-         request
          (fn [a b]
-           (let [current-state (or (-> a id :table-state table-name) {})]
+           (let [current-state (or (-> a :table-state table-name) {})]
              (-> a
-                 (assoc-in [id :table-state table-name]
+                 (assoc-in [:table-state table-name]
                            (merge-with merge-table-state-vecs
                                        current-state
                                        b)))))
@@ -326,7 +237,7 @@
                             [(keyword filter) (:filter-value params)])
                           (if-let [filter (:remove-filter params)]
                             [(keyword filter) :remove]))))))
-        id :table-state table-name)))
+        :table-state table-name)))
 
 (defn build-page-and-sort-map [table-state-map]
   (assoc {} :sort
@@ -416,10 +327,7 @@
                                                     cell-value))))
                                       row-values)))))
                  rows)))
-      (vec
-       (concat
-        [:table]
-        rows)))))
+      (vec (concat [:table] rows)))))
 
 (defn standard-table [props columns column-fn data]
   [:table {:class "list"}
@@ -429,10 +337,8 @@
       (table-row (map #(column-fn % row-data) columns) class))
     data (cycle ["odd" "even"]))])
 
-(defn get-table-state [request table-name]
-  (let [id (keyword (session-id request))
-        t-state (-> @session id :table-state table-name)]
-    t-state))
+(defn get-table-state [table-name]
+  (session-get :table-state table-name))
 
 (defn opposite-sort-dir [d]
   (cond (= d :asc) :desc
@@ -448,7 +354,7 @@
         (filter map? column-spec))))
 
 (defn sort-table-header [request table-name props column-spec]
-  (let [t-state (:sort (get-table-state request table-name))
+  (let [t-state (:sort (get-table-state table-name))
         sort-dir-map (reduce
                       (fn [a b]
                         (assoc a (first b) (last b)))
@@ -486,7 +392,7 @@
         "")))
 
 (defn create-table-sort-and-filter-controls [request table-name props]
-  (let [current-state (get-table-state request table-name)]
+  (let [current-state (get-table-state table-name)]
     (vec
     (conj
      [:div {:class "filter-and-sort-controls"}]
@@ -821,7 +727,7 @@
   ([layout form-name coll request]
      (form-layout-grid layout form-name coll request {}))
   ([layout form-name coll request init-data]
-     (if-let [form-state (get-flash-value! form-name request)]
+     (if-let [form-state (get-flash-value! form-name)]
        (form-layout-grid* layout form-state coll)
        (form-layout-grid* layout {:form-data init-data} coll))))
 

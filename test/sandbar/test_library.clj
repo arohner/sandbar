@@ -1,27 +1,25 @@
-; Copyright (c) Brenton Ashworth. All rights reserved.
-; The use and distribution terms for this software are covered by the
-; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-; which can be found in the file COPYING at the root of this distribution.
-; By using this software in any fashion, you are agreeing to be bound by
-; the terms of this license.
-; You must not remove this notice, or any other, from this software.
+;; Copyright (c) Brenton Ashworth. All rights reserved.
+;; The use and distribution terms for this software are covered by the
+;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;; which can be found in the file COPYING at the root of this distribution.
+;; By using this software in any fashion, you are agreeing to be bound by
+;; the terms of this license.
+;; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.test_library
-  (:use [clojure.test]
-        [sandbar.library]
-        [sandbar.test :only (t)]))
+  (:use (clojure test)
+        (sandbar library
+                 stateful-session
+                 [test :only (t)])))
+
+(defn test-capitalize [s]
+  (is (= (capitalize "word")
+         "Word"))
+  (is (= (capitalize "Word")
+         "Word")))
 
 (defn test-request [params]
   {:session {:id "x"} :params params})
-
-
-(deftest test-put-in-session!
-  (t "put in session"
-     (t "one element"
-        (binding [session (atom {})]
-          (is (= (-> (put-in-session! {:session {:id "i"}} :t "t")
-                     :i :t)
-                 "t"))))))
 
 (deftest test-merge-table-state-vecs
   (t "merge table sort state"
@@ -69,53 +67,53 @@
 (deftest test-update-table-state!
   (t "update table state sort state"
      (t "when adding sort to initially empty state"
-        (binding [session (atom {})]
+        (binding [*session* (atom {})]
           (is (= (update-table-state! :test-table
                                       (test-request {:sort-asc "a"}))
                  {:sort [:a :asc] :filter []}))))
      (t "when changing the direction of an existing sort"
-        (binding [session (atom (test-table-state {:sort [:a :asc]}))]
+        (binding [*session* (atom (test-table-state {:sort [:a :asc]}))]
           (is (= (update-table-state! :test-table
                                       (test-request {:sort-desc "a"}))
                  {:sort [:a :desc] :filter []}))))
      (t "when adding multiple sorts at the same time"
-        (binding [session (atom (test-table-state {:sort [:a :asc]}))]
+        (binding [*session* (atom (test-table-state {:sort [:a :asc]}))]
           (is (= (update-table-state!
                   :test-table
                   (test-request {:sort-asc "b" :sort-desc "c"}))
                  {:sort [:a :asc :b :asc :c :desc] :filter []}))))
      (t "when adding a new sort to an existing sort"
-        (binding [session (atom (test-table-state {:sort [:b :asc]}))]
+        (binding [*session* (atom (test-table-state {:sort [:b :asc]}))]
           (is (= (update-table-state! :test-table
                                       (test-request {:sort-desc "a"}))
                  {:sort [:b :asc :a :desc] :filter []}))))
      (t "when removing an existing sort"
-        (binding [session (atom (test-table-state
+        (binding [*session* (atom (test-table-state
                                      {:sort [:b :asc :a :asc]}))]
           (is (= (update-table-state! :test-table
                                       (test-request {:remove-sort "a"}))
                  {:sort [:b :asc] :filter []})))))
   (t "update table filter state"
      (t "when adding filter to initially empty state"
-        (binding [session (atom {})]
+        (binding [*session* (atom {})]
           (is (= (update-table-state!
                   :test-table
                   (test-request {:filter "a" :filter-value "v-a"}))
                  {:sort [] :filter [:a "v-a"]}))))
      (t "when changing the value of a filter"
-        (binding [session (atom (test-table-state {:filter [:a "v-a"]}))]
+        (binding [*session* (atom (test-table-state {:filter [:a "v-a"]}))]
           (is (= (update-table-state!
                   :test-table
                   (test-request {:filter "a" :filter-value "v-b"}))
                  {:sort [] :filter [:a "v-b"]}))))
      (t "when adding a new filter to an existing filter"
-        (binding [session (atom (test-table-state {:filter [:b "v-b"]}))]
+        (binding [*session* (atom (test-table-state {:filter [:b "v-b"]}))]
           (is (= (update-table-state!
                   :test-table
                   (test-request {:filter "a" :filter-value "v-a"}))
                  {:sort [] :filter [:b "v-b" :a "v-a"]}))))
      (t "when removing an existing filter"
-        (binding [session (atom (test-table-state
+        (binding [*session* (atom (test-table-state
                                      {:filter [:b "v-b" :a "v-a"]}))]
           (is (= (update-table-state! :test-table
                                       (test-request {:remove-filter "a"}))
@@ -130,13 +128,13 @@
          {:a "v-a" :b "v-b"})))
 
 (deftest test-current-page-and-sort!
-  (binding [session (atom (test-table-state {:sort [:b :asc]}))]
+  (binding [*session* (atom (test-table-state {:sort [:b :asc]}))]
     (is (= (current-page-and-sort! :test-table
                                    (test-request {:sort-desc "a"}))
            {:sort [:asc "b" :desc "a"]}))))
 
 (deftest test-create-table-sort-and-filter-controls
-  (binding [session (atom (test-table-state {:sort [:a :asc]
+  (binding [*session* (atom (test-table-state {:sort [:a :asc]
                                              :filter [:b "v-b"]}) )]
     (is (= (create-table-sort-and-filter-controls
             (test-request {})
@@ -464,127 +462,128 @@
                      [:input {:type "checkbox", :name :name, :value "b"} "b"]]]]]]])))))
 
 (deftest test-form-layout
-  (t "create form layout"
-     (t "with a single required text field and no initial state"
-        (is (= (form-layout-grid
-                :test
-                [(form-textfield "f1" :name :required)]
-                {})
-               (test-form-table [1]
-                                [[:div
-                                  (test-form-req-label "f1")
-                                  (form-textfield-fixture "name" "")]]))))
-     (t "with a single optional text field and no initial state"
-        (is (= (form-layout-grid
-                :test
-                [(form-textfield "f1" :name)]
-                {})
-               (test-form-table [1]
-                                [[:div
-                                  (test-form-opt-label "f1")
-                                  (form-textfield-fixture "name" "")]]))))
-     (t "with a single optional text field and an initial state"
-        (is (= (form-layout-grid
-                one-column-layout
-                :test
-                [(form-textfield "f1" :name)]
-                {}
-                {:name "n"})
-               (test-form-table [1]
-                                [[:div
-                                  (test-form-opt-label "f1")
-                                  (form-textfield-fixture "name" "n")]]))))
-     (t "with two optional text fields and no initial state"
-        (is (= (form-layout-grid
-                :test
-                [(form-textfield "f1" :name)
-                 (form-textfield "f2" :age)]
-                {})
-               (test-form-table [1 1]
+  (binding [*session* (atom {})]
+    (t "create form layout"
+       (t "with a single required text field and no initial state"
+          (is (= (form-layout-grid
+                  :test
+                  [(form-textfield "f1" :name :required)]
+                  {})
+                 (test-form-table [1]
+                                  [[:div
+                                    (test-form-req-label "f1")
+                                    (form-textfield-fixture "name" "")]]))))
+       (t "with a single optional text field and no initial state"
+          (is (= (form-layout-grid
+                  :test
+                  [(form-textfield "f1" :name)]
+                  {})
+                 (test-form-table [1]
+                                  [[:div
+                                    (test-form-opt-label "f1")
+                                    (form-textfield-fixture "name" "")]]))))
+       (t "with a single optional text field and an initial state"
+          (is (= (form-layout-grid
+                  one-column-layout
+                  :test
+                  [(form-textfield "f1" :name)]
+                  {}
+                  {:name "n"})
+                 (test-form-table [1]
+                                  [[:div
+                                    (test-form-opt-label "f1")
+                                    (form-textfield-fixture "name" "n")]]))))
+       (t "with two optional text fields and no initial state"
+          (is (= (form-layout-grid
+                  :test
+                  [(form-textfield "f1" :name)
+                   (form-textfield "f2" :age)]
+                  {})
+                 (test-form-table [1 1]
+                                  [[:div
+                                    (test-form-opt-label "f1")
+                                    (form-textfield-fixture "name" "")]]
+                                  [[:div
+                                    (test-form-opt-label "f2")
+                                    (form-textfield-fixture "age" "")]]))))
+       (t "explicitly using one column layout - layout vec has 2 of 4 values"
+          (is (= (form-layout-grid
+                  one-column-layout
+                  :test
+                  [(form-textfield "f1" :name)
+                   (form-textfield "f2" :age)]
+                  {})
+                 (test-form-table [1 1]
+                                  [[:div
+                                    (test-form-opt-label "f1")
+                                    (form-textfield-fixture "name" "")]]
+                                  [[:div
+                                    (test-form-opt-label "f2")
+                                    (form-textfield-fixture "age" "")]]))))
+       (t "using a two column layout"
+          (is (= (form-layout-grid
+                  [2]
+                  :test
+                  [(form-textfield "f1" :name)
+                   (form-textfield "f2" :age)]
+                  {})
+                 (test-form-table [2]
+                                  [[:div
+                                    (test-form-opt-label "f1")
+                                    (form-textfield-fixture "name" "")]]
+                                  [[:div
+                                    (test-form-opt-label "f2")
+                                    (form-textfield-fixture "age" "")]]))))
+       (t "using a mix of one and two columns"
+          (is (= (form-layout-grid
+                  [1 2]
+                  :test
+                  [(form-textfield "f1" :name)
+                   (form-textfield "f2" :age)
+                   (form-textfield "f3" :title)]
+                  {})
+                 (test-form-table [1 2]
+                                  [[:div
+                                    (test-form-opt-label "f1")
+                                    (form-textfield-fixture "name" "")]]
+                                  [[:div
+                                    (test-form-opt-label "f2")
+                                    (form-textfield-fixture "age" "")]]
+                                  [[:div
+                                    (test-form-opt-label "f3")
+                                    (form-textfield-fixture "title" "")]]))))
+       (t "with one hidden field"
+          (is (= (form-layout-grid
+                  :test
+                  [(form-hidden :title)
+                   (form-textfield "f1" :name)
+                   (form-textfield "f2" :age)]
+                  {})
+                 [:div
+                  (layout-table []
                                 [[:div
                                   (test-form-opt-label "f1")
                                   (form-textfield-fixture "name" "")]]
                                 [[:div
                                   (test-form-opt-label "f2")
-                                  (form-textfield-fixture "age" "")]]))))
-     (t "explicitly using one column layout - layout vec has 2 of 4 values"
-        (is (= (form-layout-grid
-                one-column-layout
-                :test
-                [(form-textfield "f1" :name)
-                 (form-textfield "f2" :age)]
-                {})
-               (test-form-table [1 1]
+                                  (form-textfield-fixture "age" "")]])
+                  (form-hidden-fixture "title" "")])))
+       (t "with two hidden fields"
+          (is (= (form-layout-grid
+                  :test
+                  [(form-hidden :title)
+                   (form-hidden :id)
+                   (form-textfield "f1" :name)
+                   (form-textfield "f2" :age)]
+                  {})
+                 [:div
+                  (layout-table []
                                 [[:div
                                   (test-form-opt-label "f1")
                                   (form-textfield-fixture "name" "")]]
                                 [[:div
                                   (test-form-opt-label "f2")
-                                  (form-textfield-fixture "age" "")]]))))
-     (t "using a two column layout"
-        (is (= (form-layout-grid
-                [2]
-                :test
-                [(form-textfield "f1" :name)
-                 (form-textfield "f2" :age)]
-                {})
-               (test-form-table [2]
-                                [[:div
-                                  (test-form-opt-label "f1")
-                                  (form-textfield-fixture "name" "")]]
-                                [[:div
-                                  (test-form-opt-label "f2")
-                                  (form-textfield-fixture "age" "")]]))))
-     (t "using a mix of one and two columns"
-        (is (= (form-layout-grid
-                [1 2]
-                :test
-                [(form-textfield "f1" :name)
-                 (form-textfield "f2" :age)
-                 (form-textfield "f3" :title)]
-                {})
-               (test-form-table [1 2]
-                                [[:div
-                                  (test-form-opt-label "f1")
-                                  (form-textfield-fixture "name" "")]]
-                                [[:div
-                                  (test-form-opt-label "f2")
-                                  (form-textfield-fixture "age" "")]]
-                                [[:div
-                                  (test-form-opt-label "f3")
-                                  (form-textfield-fixture "title" "")]]))))
-     (t "with one hidden field"
-        (is (= (form-layout-grid
-                :test
-                [(form-hidden :title)
-                 (form-textfield "f1" :name)
-                 (form-textfield "f2" :age)]
-                {})
-               [:div
-                (layout-table []
-                              [[:div
-                                (test-form-opt-label "f1")
-                                (form-textfield-fixture "name" "")]]
-                              [[:div
-                                (test-form-opt-label "f2")
-                                (form-textfield-fixture "age" "")]])
-                (form-hidden-fixture "title" "")])))
-     (t "with two hidden fields"
-        (is (= (form-layout-grid
-                :test
-                [(form-hidden :title)
-                 (form-hidden :id)
-                 (form-textfield "f1" :name)
-                 (form-textfield "f2" :age)]
-                {})
-               [:div
-                (layout-table []
-                              [[:div
-                                (test-form-opt-label "f1")
-                                (form-textfield-fixture "name" "")]]
-                              [[:div
-                                (test-form-opt-label "f2")
-                                (form-textfield-fixture "age" "")]])
-                (form-hidden-fixture "title" "")
-                (form-hidden-fixture "id" "")])))))
+                                  (form-textfield-fixture "age" "")]])
+                  (form-hidden-fixture "title" "")
+                  (form-hidden-fixture "id" "")]))))))
 

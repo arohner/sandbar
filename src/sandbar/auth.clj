@@ -12,15 +12,17 @@
         (clojure.contrib [error-kit :as kit])
         (sandbar [library :only (cpath
                                  remove-cpath
-                                 get-from-session
-                                 put-in-session!
                                  redirect?
                                  redirect-301
-                                 append-to-redirect-loc)])))
+                                 append-to-redirect-loc)]
+                 stateful-session)))
+
+;; TODO remove the dependency on stateful-session. You will want people
+;; to use this without having to use stateful sessions.
 
 (def *hash-delay* 1000)
 
-(declare *current-user*)
+(def *current-user* nil)
 
 (kit/deferror *access-error* [] [n]
   {:msg (str "Access error: " n)
@@ -145,28 +147,21 @@
 ;; ===
 ;;
 
-(defn current-user
-  ([] *current-user*)
-  ([request]
-     (get-from-session request :current-user)))
+(defn current-user []
+  (or *current-user* (session-get :current-user)))
 
-(defn current-username
-  ([] (:name *current-user*))
-  ([request] (:name (current-user request))))
+(defn current-username []
+  (:name (current-user)))
 
-(defn current-user-roles
-  ([] (:roles *current-user*))
-  ([request] (:roles (current-user request))))
+(defn current-user-roles []
+  (:roles (current-user)))
 
 (defn any-role-granted?
   "Determine if any of the passed roles are granted. The first argument must
    be the request unless we are running in a context in which *current-user*
    is defined."
-  [& args]
-  (let [user-roles (if (map? (first args))
-                     (current-user-roles (first args))
-                     (current-user-roles))
-        roles (if (map? (first args)) (rest args) args)]
+  [& roles]
+  (let [user-roles (current-user-roles)]
     (intersect-exists? user-roles (set roles))))
 
 (defn access-error
@@ -199,13 +194,13 @@
           channel-req (find-matching-config ssl-config request)
           uri (:uri request)]
       (cond (and (= channel-req :ssl) (= (:scheme request) :http))
-            {:status 301 :headers {"Location" (to-https request ssl-port)}}
+            (redirect-301 (to-https request ssl-port))
             (and (= channel-req :nossl) (= (:scheme request) :https))
-            {:status 301 :headers {"Location" (to-http request port)}}
+            (redirect-301 (to-http request port))
             :else (handler request)))))
 
-(defn put-user-in-session! [request user]
-  (put-in-session! request :current-user user))
+(defn put-user-in-session! [user]
+  (session-put! :current-user user))
 
 (defn with-security
   "Middleware function for authentication and authorization."
@@ -213,7 +208,7 @@
   ([handler config auth-fn uri-prefix]
      (fn [request]
        (let [required-roles (required-roles config request)
-             user (current-user request)
+             user (current-user)
              user-status (if (and (auth-required? required-roles)
                                   (nil? user))
                            (auth-fn request)
@@ -221,7 +216,7 @@
          (cond (redirect? user-status)
                (append-to-redirect-loc user-status uri-prefix)
                (allow-access? required-roles (:roles user-status))
-               (binding [*current-user* (current-user request)]
+               (binding [*current-user* user-status]
                  (kit/with-handler
                    (handler request)
                    (kit/handle *access-error* [n]
@@ -231,9 +226,9 @@
                                  (redirect-to-authentication-error uri-prefix)
                                  (let [user-status (auth-fn request)]
                                    (if (redirect? user-status)
-                                     user-status
-                                     (do (put-user-in-session! request
-                                                               user-status)
+                                     (append-to-redirect-loc user-status
+                                                             uri-prefix)
+                                     (do (put-user-in-session! user-status)
                                          (set! *current-user* user-status)
                                          (handler request))))))))
                :else (redirect-to-permission-denied uri-prefix))))))

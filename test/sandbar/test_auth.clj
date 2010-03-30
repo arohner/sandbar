@@ -9,7 +9,7 @@
 (ns sandbar.test_auth
   (:use [clojure.test]
         (ring.util [response :only (redirect)])
-        (sandbar library auth basic_authentication)
+        (sandbar stateful-session library auth basic_authentication)
         [sandbar.test :only (t)]))
 
 (deftest test-append-to-redirect-loc
@@ -64,7 +64,7 @@
 (deftest test-with-secure-channel
   (binding [app-context (atom "")]
     (t "check channel security"
-       (binding [session (atom {})
+       (binding [*session* (atom {})
                  with-secure-channel (partial with-secure-channel
                                               :uri
                                               fixture-security-config
@@ -200,13 +200,13 @@
                   with-security (partial with-security
                                          :uri
                                          fixture-security-config)]
-          (binding [session (atom {})]
+          (binding [*session* (atom {})]
             (t "redirect to login when user auth required and user is nil"
                (let [result ((with-security basic-auth)
                              {:session {:id "x"} :uri "/admin/page"})]
                  (is (= result
                         (redirect "/login")))
-                 (is (= (-> @session :x :auth-redirect-uri)
+                 (is (= (-> @*session* :x :auth-redirect-uri)
                         "/admin/page"))))
             (t "redirect to login with a uri-prefix"
                (is (= ((with-security basic-auth "/prefix")
@@ -224,7 +224,7 @@
                (is (= ((with-security (fn [r] {:roles #{:user}}))
                        {:uri "/some/page"})
                       "/some/page"))))
-          (binding [session (atom {:x {:current-user {:name "testuser"
+          (binding [*session* (atom {:x {:current-user {:name "testuser"
                                                       :roles #{:user}}}})]
             (t "redirect to permission denied when valid user without role"
                (is (= ((with-security basic-auth)
@@ -236,7 +236,7 @@
                       "/some/page"))))))
      (t "and NO url config"
         (binding [app-context (atom "")]
-          (binding [session (atom {})]
+          (binding [*session* (atom {})]
             (t "redirect to permission denied when access exception is thrown"
                (is (= ((with-security
                          (fn [r] (access-error "testing with-security"))
@@ -251,7 +251,7 @@
                          basic-auth)
                        {:session {:id "x"} :uri "/x"})
                       (redirect "/login"))))
-            (binding [session (atom {:x {}})]
+            (binding [*session* (atom {:x {}})]
               (t "redirect to authentication error page when in auth-err loop"
                 (is (= ((with-security
                           (fn [r] (if (= (:uri r) "/x")
@@ -261,7 +261,7 @@
                           (fn [r] {:name "t" :roles #{:user}}))
                         {:session {:id "x"} :uri "/x"})
                        (redirect "/authentication-error")))))
-            (binding [session (atom {:x {}})]
+            (binding [*session* (atom {:x {}})]
               (t "access page when authentication is successfull"
                 (is (= ((with-security
                           (fn [r] (ensure-authenticated
@@ -270,7 +270,7 @@
                           (fn [r] {:name "t" :roles #{:user}}))
                         {:session {:id "x"} :uri "/x"})
                        "success"))))
-            (binding [session (atom {:x {}})]
+            (binding [*session* (atom {:x {}})]
               (t "permission denied using ensure-any-role"
                  (is (= ((with-security
                            (fn [r] (ensure-any-role [:admin]
@@ -279,7 +279,7 @@
                            (fn [r] {:name "t" :roles #{:user}}))
                          {:session {:id "x"} :uri "/x"})
                         (redirect "/permission-denied")))))
-            (binding [session (atom {:x {}})]
+            (binding [*session* (atom {:x {}})]
               (t "access allowed using ensure-any-role"
                  (is (= ((with-security
                            (fn [r] (ensure-any-role [:user]
@@ -288,7 +288,7 @@
                            (fn [r] {:name "t" :roles #{:user}}))
                          {:session {:id "x"} :uri "/x"})
                         "success"))))
-            (binding [session (atom {:x {}})]
+            (binding [*session* (atom {:x {}})]
               (t "access-allowed using ensure-any-role when multiple roles"
                  (is (= ((with-security
                            (fn [r] (ensure-any-role [:admin :user]
@@ -301,19 +301,19 @@
 (deftest test-any-role-granted?
   (t "are any of these roles granted"
      (let [req {:session {:id "x"}}]
-       (binding [session (atom {:x {:current-user {:name "testuser"
+       (binding [*session* (atom {:x {:current-user {:name "testuser"
                                                    :roles #{:user}}}})]
          (t "passing the request and role is missing"
             (is (false? (any-role-granted? req :admin))))
          (t "passing the request and one matching role"
             (is (true? (any-role-granted? req :user)))))
-       (binding [session (atom {:x {:current-user {:name "testuser"
+       (binding [*session* (atom {:x {:current-user {:name "testuser"
                                                    :roles #{:user :admin}}}})]
          (t "passing the request and one of two roles match"
             (is (true? (any-role-granted? req :admin))))
          (t "passing the request and another of the two roles match"
             (is (true? (any-role-granted? req :user)))))
-       (binding [session (atom {})
+       (binding [*session* (atom {})
                  *current-user* {:name "testuser"
                                  :roles #{:admin}}]
          (t "using *current-user* binding with a matching role"

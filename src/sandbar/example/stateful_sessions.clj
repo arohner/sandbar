@@ -16,6 +16,7 @@
 (defn functional-handler
   "Functional style of working with a session."
   [request]
+  (println request)
   (let [counter (if-let [counter (-> request :session :counter)]
                   (+ counter 1)
                   1)]

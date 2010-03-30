@@ -1,15 +1,15 @@
-; Copyright (c) Brenton Ashworth. All rights reserved.
-; The use and distribution terms for this software are covered by the
-; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-; which can be found in the file COPYING at the root of this distribution.
-; By using this software in any fashion, you are agreeing to be bound by
-; the terms of this license.
-; You must not remove this notice, or any other, from this software.
+;; Copyright (c) Brenton Ashworth. All rights reserved.
+;; The use and distribution terms for this software are covered by the
+;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;; which can be found in the file COPYING at the root of this distribution.
+;; By using this software in any fashion, you are agreeing to be bound by
+;; the terms of this license.
+;; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.test_basic_authentication
   (:use [clojure.test]
         (ring.util [response :only (redirect)])
-        (sandbar library auth basic_authentication)
+        (sandbar stateful-session library auth basic_authentication)
         [sandbar.test :only (t)]))
 
 (defn test-login-load-fn
@@ -34,18 +34,19 @@
 
 (deftest test-authenticate!
   (t "authenticate!"
-     (t "with missing username"
-        (is (= (authenticate! test-login-load-fn
-                              {}
-                              {:params {:password "x"}})
-               (redirect "login"))))
-     (t "with missing password"
+     (binding [*session* (atom {})]
+       (t "with missing username"
+          (is (= (authenticate! test-login-load-fn
+                                {}
+                                {:params {:password "x"}})
+                 (redirect "login"))))
+       (t "with missing password"
         (is (= (authenticate! test-login-load-fn
                               {}
                               {:params {:username "u"}})
-               (redirect "login"))))
+               (redirect "login")))))
      (t "with correct password"
-        (binding [session (atom {:x {:auth-redirect-uri "/test"}})]
+        (binding [*session* (atom {:auth-redirect-uri "/test"})]
           (let [result (authenticate! test-login-load-fn
                                       {}
                                       {:session {:id "x"}
@@ -53,13 +54,13 @@
                                        {:username "u" :password "test"}})]
             (is (= result
                    (redirect "/test")))
-            (is (= (-> @session
+            (is (= (-> @*session*
                        :x
                        (dissoc :last-access))
                    {:current-user {:name "u"
                                    :roles #{:admin}}})))))
      (t "with incorrect password"
-        (binding [session (atom {:x {:auth-redirect-uri "/test"}})]
+        (binding [*session* (atom {:auth-redirect-uri "/test"})]
           (let [result (authenticate! test-login-load-fn
                                       {}
                                       {:session {:id "x"}
@@ -67,7 +68,7 @@
                                        {:username "u" :password "wrong"}})]
             (is (= result
                    (redirect "login")))
-            (is (= (-> @session
+            (is (= (-> @*session*
                        :x
                        (dissoc :last-access))
                    {:auth-redirect-uri "/test"})))))))

@@ -11,7 +11,8 @@
         [sandbar.library]
         (sandbar [auth :only (current-user
                               current-username
-                              any-role-granted?)])
+                              any-role-granted?)]
+                 stateful-session)
         [sandbar.example.ideadb.model]))
 
 (defn base-layout [title header request & body]
@@ -43,7 +44,7 @@
                 [:div {:class "border-top-left-corner"}
                  [:div {:class "border-top-right-corner"}
                   [:div {:id "content"}
-                   (if-let [m (get-flash-value! :user-message request)]
+                   (if-let [m (get-flash-value! :user-message)]
                      [:div {:class "message"}
                       m])
                    body]]]]]]]]]]]]
