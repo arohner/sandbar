@@ -26,8 +26,8 @@
   (t "create login from params"
      (t "with valid username"
         (is (= (create-login-from-params test-login-load-fn
-                                         {:params {:username "u"
-                                                   :password "test"}})
+                                         {:params {"username" "u"
+                                                   "password" "test"}})
                {:username "u" :password "test" :salt "cfjhuy"
                 :password-hash (hash-password "test" "cfjhuy")
                 :roles #{:admin}})))))
@@ -38,37 +38,31 @@
        (t "with missing username"
           (is (= (authenticate! test-login-load-fn
                                 {}
-                                {:params {:password "x"}})
+                                {:params {"password" "x"}})
                  (redirect "login"))))
        (t "with missing password"
         (is (= (authenticate! test-login-load-fn
                               {}
-                              {:params {:username "u"}})
+                              {:params {"username" "u"}})
                (redirect "login")))))
      (t "with correct password"
         (binding [*session* (atom {:auth-redirect-uri "/test"})]
           (let [result (authenticate! test-login-load-fn
                                       {}
-                                      {:session {:id "x"}
-                                       :params
-                                       {:username "u" :password "test"}})]
+                                      {:params
+                                       {"username" "u" "password" "test"}})]
             (is (= result
                    (redirect "/test")))
-            (is (= (-> @*session*
-                       :x
-                       (dissoc :last-access))
+            (is (= @*session*
                    {:current-user {:name "u"
                                    :roles #{:admin}}})))))
      (t "with incorrect password"
         (binding [*session* (atom {:auth-redirect-uri "/test"})]
           (let [result (authenticate! test-login-load-fn
                                       {}
-                                      {:session {:id "x"}
-                                       :params
-                                       {:username "u" :password "wrong"}})]
+                                      {:params
+                                       {"username" "u" "password" "wrong"}})]
             (is (= result
                    (redirect "login")))
-            (is (= (-> @*session*
-                       :x
-                       (dissoc :last-access))
+            (is (= @*session*
                    {:auth-redirect-uri "/test"})))))))

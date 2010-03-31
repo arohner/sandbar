@@ -338,7 +338,7 @@
     data (cycle ["odd" "even"]))])
 
 (defn get-table-state [table-name]
-  (session-get :table-state table-name))
+  (session-get [:table-state table-name]))
 
 (defn opposite-sort-dir [d]
   (cond (= d :asc) :desc
@@ -353,7 +353,7 @@
    (map #(if (contains? (:actions %) :sort) (:column %))
         (filter map? column-spec))))
 
-(defn sort-table-header [request table-name props column-spec]
+(defn sort-table-header [table-name props column-spec]
   (let [t-state (:sort (get-table-state table-name))
         sort-dir-map (reduce
                       (fn [a b]
@@ -391,7 +391,7 @@
            (apply vector (map link-fn (data-fn t-state))))))
         "")))
 
-(defn create-table-sort-and-filter-controls [request table-name props]
+(defn create-table-sort-and-filter-controls [table-name props]
   (let [current-state (get-table-state table-name)]
     (vec
     (conj
@@ -419,9 +419,9 @@
                             (current-page-and-sort! t-name request))
         columns (table-column-names column-spec)]
     [:div {:class "filter-and-sort-table"}
-   (create-table-sort-and-filter-controls request t-name props)
+   (create-table-sort-and-filter-controls t-name props)
    [:table {:class "list"}
-      (sort-table-header request t-name props column-spec)
+      (sort-table-header t-name props column-spec)
    (map
     (fn [row-data class]
       (table-row (map #(hash-map

@@ -1,8 +1,8 @@
 h1. Sandbar
 
-This branch currently does not work. I am in the middle of migrating to Compojure 0.4 an and Ring 2.0.
+This branch currently does not work. I am in the middle of migrating to Compojure 0.4 and Ring 2.0.
 
-Sandbar is a set of libraries for web applications which is designed to be used with "Compojure":http://github.com/weavejester/compojure and "Ring":http://github.com/mmcgrana/ring. It contains (or will contain) code to help with: 
+Sandbar is a set of libraries for web applications which is designed to be used with "Compojure":http://github.com/weavejester/compojure and/or "Ring":http://github.com/mmcgrana/ring. It contains will contain code to help with: 
 
 * Authorization and authentication
 * CSS builder
@@ -11,6 +11,8 @@ Sandbar is a set of libraries for web applications which is designed to be used 
 * User management
 * Some kind of interface to Lucene (Solr)
 * A Ring session storage engine backed by FleetDB, Memcached or mstate???
+
+The name "sandbar" is a surfing reference. A sandbar creates waves which may be surfed. sandbar creates web sites which may be surfed. Sandbars are always in a state of change. So is this project.
 
 The project contains the library code as well as a reference application which uses it.
 
@@ -51,7 +53,7 @@ Log in with one of these accounts and take it for a spin. The next step would be
 
 h2. Features
 
-This is the very beginning of this project. Much of the code is a mess at this point and the API is shifting. As features become more complete I will add documentation for them here. The main focus is now on authentication and authorization as I think this is the first feature that others may want to use.
+This is the very beginning of this project. Much of the code is a mess at this point and the API is shifting. As features become more complete, I will add documentation for them here. The main focus is now on authentication and authorization as I think this is the first feature that others may want to use.
 
 The vaguely named <code>sandbar.library</code> namespace contains a lot of code that will end up in other namespaces in the future. Right now it is a catch-all for code that I am too lazy to organize.
 
@@ -112,9 +114,9 @@ The <code>sandbar.auth</code> namespace includes the functions:
 * current-user-roles
 * any-role-granted?
 
-The first three take either the request as an argument or no arguments. The no argument version can be used in any code that is executed within the <code>with-security</code> middleware. The var <code>*current-user*</code> is bound to the current user in <code>with-security</code>.
+The first three take either the request as an argument or no arguments. The no-argument version can be used in any code that is executed downstream <code>with-security</code> middleware. The var <code>*current-user*</code> is bound to the current user in <code>with-security</code>.
 
-<code>any-role-granted?</code> takes a request and list or roles as arguments or just a list of roles. If passing only a list roles then it must also be called within <code>with-security</code>.
+<code>any-role-granted?</code> takes a request and list of roles as arguments or just a list of roles. If passing only a list of roles then it must also be called within <code>with-security</code>.
 
 These functions can be used to authorize access at the function level and should be used in your model to control access to sensitive data.
 
@@ -140,7 +142,7 @@ This will ensure that the <code>*current-user*</code> is authenticated, raising 
 </code>
 </pre>
 
-<code>ensure-any-role</code> will first ensure that the <code>*current-user*</code> is authenticated. If not it will raise an authentication error. It will then ensure that the <code>*current-user*</code> is in one of the roles. If not then it will raise an access error.
+<code>ensure-any-role</code> will first ensure that the <code>*current-user*</code> is authenticated. If not, it will raise an authentication error. It will then ensure that the <code>*current-user*</code> is in one of the roles. If not, it will raise an access error.
 
 h4. TODO
 
@@ -168,7 +170,7 @@ Working on making it easy to layout and build forms without having to write HTML
 
 h3. User management
 
-Every application that I create needs to home some kind of user management GUI. The goal here is to package this up into a library that I can just include and configure and never have to worry about again. This is also partially implemented.
+Every application that I create needs to have some kind of user management GUI. The goal here is to package this up into a library that I can just include and configure and never have to worry about again. This is also partially implemented.
 
 h3. CSS Builder
 

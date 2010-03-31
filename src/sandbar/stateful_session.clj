@@ -33,7 +33,9 @@
 
 (defn session-get
   ([k] (session-get k nil))
-  ([k default] (k @*session* default)))
+  ([k default] (if (vector? k)
+                 (get-in @*session* k)
+                 (get @*session* k default))))
 
 (defn session-delete-key! [k]
   (swap! *session* (fn [a b] (dissoc a b)) k))

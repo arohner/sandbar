@@ -1,10 +1,10 @@
-; Copyright (c) Brenton Ashworth. All rights reserved.
-; The use and distribution terms for this software are covered by the
-; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-; which can be found in the file COPYING at the root of this distribution.
-; By using this software in any fashion, you are agreeing to be bound by
-; the terms of this license.
-; You must not remove this notice, or any other, from this software.
+;; Copyright (c) Brenton Ashworth. All rights reserved.
+;; The use and distribution terms for this software are covered by the
+;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;; which can be found in the file COPYING at the root of this distribution.
+;; By using this software in any fashion, you are agreeing to be bound by
+;; the terms of this license.
+;; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.test_auth
   (:use [clojure.test]
@@ -203,14 +203,14 @@
           (binding [*session* (atom {})]
             (t "redirect to login when user auth required and user is nil"
                (let [result ((with-security basic-auth)
-                             {:session {:id "x"} :uri "/admin/page"})]
+                             {:uri "/admin/page"})]
                  (is (= result
                         (redirect "/login")))
-                 (is (= (-> @*session* :x :auth-redirect-uri)
+                 (is (= (-> @*session* :auth-redirect-uri)
                         "/admin/page"))))
             (t "redirect to login with a uri-prefix"
                (is (= ((with-security basic-auth "/prefix")
-                       {:session {:id "x"} :uri "/admin/page"})
+                       {:uri "/admin/page"})
                       (redirect "/prefix/login"))))
             (t "allow access when auth is not required"
                (is (= ((with-security basic-auth)
@@ -224,15 +224,15 @@
                (is (= ((with-security (fn [r] {:roles #{:user}}))
                        {:uri "/some/page"})
                       "/some/page"))))
-          (binding [*session* (atom {:x {:current-user {:name "testuser"
-                                                      :roles #{:user}}}})]
+          (binding [*session* (atom {:current-user {:name "testuser"
+                                                    :roles #{:user}}})]
             (t "redirect to permission denied when valid user without role"
                (is (= ((with-security basic-auth)
-                       {:session {:id "x"} :uri "/admin/page"})
+                       {:uri "/admin/page"})
                       (redirect "/permission-denied"))))
             (t "allow access when user is in correct role"
                (is (= ((with-security basic-auth)
-                       {:session {:id "x"} :uri "/some/page"})
+                       {:uri "/some/page"})
                       "/some/page"))))))
      (t "and NO url config"
         (binding [app-context (atom "")]
@@ -242,16 +242,16 @@
                          (fn [r] (access-error "testing with-security"))
                          []
                          basic-auth)
-                       {:session {:id "x"} :uri "/x"})
+                       {:uri "/x"})
                       (redirect "/permission-denied"))))
             (t "redirect to login when authorization exception is thrown"
                (is (= ((with-security
                          (fn [r] (authentication-error "testing with-security"))
                          []
                          basic-auth)
-                       {:session {:id "x"} :uri "/x"})
+                       {:uri "/x"})
                       (redirect "/login"))))
-            (binding [*session* (atom {:x {}})]
+            (binding [*session* (atom {})]
               (t "redirect to authentication error page when in auth-err loop"
                 (is (= ((with-security
                           (fn [r] (if (= (:uri r) "/x")
@@ -259,64 +259,63 @@
                                     "success"))
                           []
                           (fn [r] {:name "t" :roles #{:user}}))
-                        {:session {:id "x"} :uri "/x"})
+                        {:uri "/x"})
                        (redirect "/authentication-error")))))
-            (binding [*session* (atom {:x {}})]
+            (binding [*session* (atom {})]
               (t "access page when authentication is successfull"
                 (is (= ((with-security
                           (fn [r] (ensure-authenticated
                                     "success"))
                           []
                           (fn [r] {:name "t" :roles #{:user}}))
-                        {:session {:id "x"} :uri "/x"})
+                        {:uri "/x"})
                        "success"))))
-            (binding [*session* (atom {:x {}})]
+            (binding [*session* (atom {})]
               (t "permission denied using ensure-any-role"
                  (is (= ((with-security
                            (fn [r] (ensure-any-role [:admin]
                                                     "success"))
                            []
                            (fn [r] {:name "t" :roles #{:user}}))
-                         {:session {:id "x"} :uri "/x"})
+                         {:uri "/x"})
                         (redirect "/permission-denied")))))
-            (binding [*session* (atom {:x {}})]
+            (binding [*session* (atom {})]
               (t "access allowed using ensure-any-role"
                  (is (= ((with-security
                            (fn [r] (ensure-any-role [:user]
                                                     "success"))
                            []
                            (fn [r] {:name "t" :roles #{:user}}))
-                         {:session {:id "x"} :uri "/x"})
+                         {:uri "/x"})
                         "success"))))
-            (binding [*session* (atom {:x {}})]
+            (binding [*session* (atom {})]
               (t "access-allowed using ensure-any-role when multiple roles"
                  (is (= ((with-security
                            (fn [r] (ensure-any-role [:admin :user]
                                                     "success"))
                            []
                            (fn [r] {:name "t" :roles #{:user}}))
-                         {:session {:id "x"} :uri "/x"})
+                         {:uri "/x"})
                         "success")))))))))
 
 (deftest test-any-role-granted?
   (t "are any of these roles granted"
-     (let [req {:session {:id "x"}}]
-       (binding [*session* (atom {:x {:current-user {:name "testuser"
-                                                   :roles #{:user}}}})]
+     (binding [*session* (atom {:current-user {:name "testuser"
+                                                 :roles #{:user}}})]
          (t "passing the request and role is missing"
-            (is (false? (any-role-granted? req :admin))))
+            (is (false? (any-role-granted? :admin))))
          (t "passing the request and one matching role"
-            (is (true? (any-role-granted? req :user)))))
-       (binding [*session* (atom {:x {:current-user {:name "testuser"
-                                                   :roles #{:user :admin}}}})]
+            (is (true? (any-role-granted? :user)))))
+     (binding [*session* (atom {:current-user {:name "testuser"
+                                                 :roles #{:user :admin}}})]
          (t "passing the request and one of two roles match"
-            (is (true? (any-role-granted? req :admin))))
+            (is (true? (any-role-granted? :admin))))
          (t "passing the request and another of the two roles match"
-            (is (true? (any-role-granted? req :user)))))
-       (binding [*session* (atom {})
+            (is (true? (any-role-granted? :user)))))
+     (binding [*session* (atom {})
                  *current-user* {:name "testuser"
                                  :roles #{:admin}}]
          (t "using *current-user* binding with a matching role"
             (is (true? (any-role-granted? :admin))))
          (t "using *current-user* binding and no matching role"
-            (is (false? (any-role-granted? :user))))))))
+            (is (false? (any-role-granted? :user)))))))

@@ -19,7 +19,7 @@
          "Word")))
 
 (defn test-request [params]
-  {:session {:id "x"} :params params})
+  {:params params})
 
 (deftest test-merge-table-state-vecs
   (t "merge table sort state"
@@ -62,7 +62,7 @@
                [:a "a"])))))
 
 (defn test-table-state [s]
-  {:x {:table-state {:test-table s}}})
+  {:table-state {:test-table s}})
 
 (deftest test-update-table-state!
   (t "update table state sort state"
@@ -135,9 +135,8 @@
 
 (deftest test-create-table-sort-and-filter-controls
   (binding [*session* (atom (test-table-state {:sort [:a :asc]
-                                             :filter [:b "v-b"]}) )]
+                                               :filter [:b "v-b"]}) )]
     (is (= (create-table-sort-and-filter-controls
-            (test-request {})
             :test-table
             {})
            [:div {:class "filter-and-sort-controls"}
