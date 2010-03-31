@@ -12,11 +12,10 @@
                  stateful-session
                  [test :only (t)])))
 
-(defn test-capitalize [s]
-  (is (= (capitalize "word")
-         "Word"))
-  (is (= (capitalize "Word")
-         "Word")))
+(deftest test-capitalize
+  (is (= (capitalize "word") "Word"))
+  (is (= (capitalize "Word") "Word"))
+  (is (= (capitalize "WORD") "Word")))
 
 (defn test-request [params]
   {:params params})

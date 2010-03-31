@@ -40,7 +40,7 @@
      (-> development-routes
          with-db-configured
          (with-security security-config basic-auth)
-         wrap-session
+         wrap-stateful-session
          wrap-params
          (wrap-file "public")
          wrap-file-info

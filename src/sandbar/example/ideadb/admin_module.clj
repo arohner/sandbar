@@ -93,8 +93,8 @@
                                           request
                                           (edit-idea-form request
                                                           (:params request))))
-  (POST "/idea/edit*" request
-        (save-idea! request (str "edit?id=" (get (:params request) "id"))))
+  (POST "/idea/edit*" {params :params}
+        (save-idea! params (str "edit?id=" (get params "id"))))
   (GET "/idea/delete*" request
        (form-layout "Confirm Delete Idea"
                     request

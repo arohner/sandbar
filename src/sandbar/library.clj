@@ -18,9 +18,11 @@
 ;; ====
 ;;
 
-;; could not find this in new 0.4.0 Compojure
-(defn capitalize [s]
-  s)
+(defn capitalize
+  "Uppercase the first letter of a string, and lowercase the rest."
+  [s]
+  (str (.toUpperCase (subs s 0 1))
+       (.toLowerCase (subs s 1))))
 
 (defn random-between [lo hi]
   (let [r (java.util.Random.)

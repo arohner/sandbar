@@ -10,12 +10,12 @@
   "Middleware for working with 'stateful' sessions."
   (:use (ring.middleware session)))
 
-(def *session* (atom nil))
+(declare *session*)
 
 (defn wrap-stateful-session
   "Create a binding for *session* which is an atom containing the session
    map. The contents of this atom will only be put in the response if the
-   response does not already contain :session."
+   response does not already contain a :session key."
   [handler]
   (wrap-session
    (fn [request]
