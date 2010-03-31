@@ -1,10 +1,10 @@
-; Copyright (c) Brenton Ashworth. All rights reserved.
-; The use and distribution terms for this software are covered by the
-; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-; which can be found in the file COPYING at the root of this distribution.
-; By using this software in any fashion, you are agreeing to be bound by
-; the terms of this license.
-; You must not remove this notice, or any other, from this software.
+;; Copyright (c) Brenton Ashworth. All rights reserved.
+;; The use and distribution terms for this software are covered by the
+;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;; which can be found in the file COPYING at the root of this distribution.
+;; By using this software in any fashion, you are agreeing to be bound by
+;; the terms of this license.
+;; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.basic_authentication
   (:use (compojure core)
@@ -18,15 +18,12 @@
 
 (defn create-login-from-params
   "Create a map of all login info to verify the identity of this user."
-  [load-fn request]
-  (println request)
-  (let [params (:params request)
-        form-data (-> (select-keys params ["username" "password"]))
+  [load-fn params]
+  (let [form-data (get-params [:username :password] params)
         user (first (load-fn :app_user
-                             {:username (get form-data "username")} {}))
+                             {:username (:username form-data)} {}))
         roles (index-by :id (load-fn :role))]
-    (-> {:username (get form-data "username")
-         :password (get form-data "password")}
+    (-> form-data
         (assoc :password-hash (:password user))
         (assoc :salt (:salt user))
         (assoc :roles (set
@@ -64,11 +61,10 @@
      (= (hash-password (:password user-data) (:salt user-data) n)
         (:password-hash user-data))))
 
-(defn authenticate! [load-fn props request]
-  (let [user-data (create-login-from-params load-fn request)
+(defn authenticate! [load-fn props params]
+  (let [user-data (create-login-from-params load-fn params)
         success (session-get :auth-redirect-uri)
         failure "login"]
-    (println user-data)
     (redirect
      (cond (invalid-login?! props user-data) failure
            (not (valid-password? user-data)) failure
@@ -97,7 +93,7 @@
         (layout (name-fn request)
                 request
                 (login-page props request)))
-   (POST (str path-prefix "/login*") request
-         (authenticate! (data-fns :load) props request))
-   (GET (str path-prefix "/logout*") request
-        (logout! props request))))
+   (POST (str path-prefix "/login*") {params :params}
+         (authenticate! (data-fns :load) props params))
+   (GET (str path-prefix "/logout*") []
+        (logout! props))))

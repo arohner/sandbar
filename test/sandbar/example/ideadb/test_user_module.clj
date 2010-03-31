@@ -24,9 +24,11 @@
   (binding [*session* (atom {:current-user {:name "t"}})]
     (t "create idea from params"
        (t "when params are empty"
-          (is (= (create-idea-from-params (test-request {}))
+          (is (= (create-idea-from-params {})
                  empty-idea)))
+       (t "when params have a name"
+          (is (= (create-idea-from-params {"name" "idea name"})
+                 (assoc empty-idea :name "idea name"))))
        (t "when params have a date_entered"
-          (is (= (create-idea-from-params (test-request
-                                           {:date_entered "2010-01-01"}))
+          (is (= (create-idea-from-params {"date_entered" "2010-01-01"})
                  (assoc empty-idea :date_entered "2010-01-01")))))))

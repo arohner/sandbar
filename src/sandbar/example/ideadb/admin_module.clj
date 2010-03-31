@@ -17,7 +17,7 @@
          [user_module])))
 
 (defn edit-idea-form [request params]
-  (let [form-data (find-by-id :idea (:id params))]
+  (let [form-data (find-by-id :idea (get params "id"))]
     (standard-form "Administrator Form" "/idea/edit"
                    "Save Changes"
                    (form-layout-grid [1 1 1 1 4]
@@ -94,18 +94,18 @@
                                           (edit-idea-form request
                                                           (:params request))))
   (POST "/idea/edit*" request
-        (save-idea! request (str "edit?id=" (:id (:params request)))))
+        (save-idea! request (str "edit?id=" (get (:params request) "id"))))
   (GET "/idea/delete*" request
        (form-layout "Confirm Delete Idea"
                     request
                     (confirm-delete find-by-id
                                     :idea
                                     properties
-                                    (:id (:params request)))))
+                                    (get (:params request) "id"))))
   (POST "/idea/delete*" {params :params}
         (do
-          (if (not (form-cancelled params))
-            (delete-by-id :idea (:id params)))
+          (if (not (form-cancelled? params))
+            (delete-by-id :idea (get params "id")))
           (redirect "list")))
   (GET "/admin/list*" request
        (main-layout "Administrator"
@@ -115,26 +115,26 @@
        (main-layout "Edit Business Units"
                     request
                     (my-list-editor :business_unit request (:params request))))
-  (POST "/admin/business-unit*" request
-        (my-list-updater :business_unit request (:params request)))
+  (POST "/admin/business-unit*" {params :params}
+        (my-list-updater :business_unit params))
   (GET "/admin/category*" request
        (main-layout "Edit Categories"
                     request
                     (my-list-editor :idea_category request (:params request))))
-  (POST "/admin/category*" request
-        (my-list-updater :idea_category request (:params request)))
+  (POST "/admin/category*" {params :params}
+        (my-list-updater :idea_category params))
   (GET "/admin/status*" request
        (main-layout "Edit Status List"
                     request
                     (my-list-editor :idea_status request (:params request))))
-  (POST "/admin/status*" request
-        (my-list-updater :idea_status request (:params request)))
+  (POST "/admin/status*" {params :params}
+        (my-list-updater :idea_status params))
   (GET "/admin/type*" request
        (main-layout "Edit Types"
                     request
                     (my-list-editor :idea_type request (:params request))))
-  (POST "/admin/type*" request
-        (my-list-updater :idea_type request (:params request)))
+  (POST "/admin/type*" {params :params}
+        (my-list-updater :idea_type params))
   (GET "/idea/download*" []
        [{:headers {"Content-Type" "application/vnd.ms-excel"
                    "Content-disposition"

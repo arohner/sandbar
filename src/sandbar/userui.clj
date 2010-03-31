@@ -38,7 +38,7 @@
   [:div
    [:div (clink-to "new" "Add new User")]
    (filter-and-sort-table
-     request
+    (:params request)
      {:type :app_user :name :user-table :props props}
      user-table-columns 
      (fn [k row-data]
@@ -59,7 +59,7 @@
    (form-multi-checkbox props :roles (load-fn :role) :name)])
 
 (defn edit-user-form [data-fns props request]
-  (let [lookup-fn (fn [r] ((data-fns :lookup) :app_user (:id (:params r))))
+  (let [lookup-fn (fn [r] ((data-fns :lookup) :app_user (get (:params r) "id")))
         action (if (.endsWith (:uri request) "new") :new :edit)
         form-data (if (= action :new) {} (lookup-fn request))
         title (if (= action :new) "Create New User" "Edit User")]
@@ -76,11 +76,10 @@
                             (assoc form-data :new_password "_unchanged")
                             form-data)))))
 
-(defn create-user-from-params [load-fn request]
-  (let [params (:params request)
-        user (-> (select-keys params
-                              [:id :username :new_password :password
-                               :first_name :last_name :email])
+(defn create-user-from-params [load-fn params]
+  (let [user (-> (get-params [:id :username :new_password :password
+                              :first_name :last_name :email]
+                             params)
                  (get-yes-no-fields params #{:account_enabled})
                  (get-multi-checkbox params :roles)
                  (assoc :type :app_user)
@@ -115,12 +114,12 @@
 
 (defn save-user! [data-fns props request]
   (let [save-or-update-fn (data-fns :save)
-        form-data (create-user-from-params (data-fns :load) request)
-        submit (-> request :params :submit)
+        form-data (create-user-from-params (data-fns :load))
+        submit (get (:params request) "submit")
         success "list"
         failure (cpath (:uri request))]
     (redirect
-     (cond (form-cancelled (:params request)) success
+     (cond (form-cancelled? (:params request)) success
            (invalid-user?! props form-data request) failure
            :else (do
                    (save-or-update-fn (dissoc form-data :new_password))
@@ -214,9 +213,9 @@
                                 (fn [u]
                                   (str (:first_name u) " " (:last_name u)))
                                 props
-                                (:id (:params request)))))
+                                (get (:params request) "id"))))
    (POST (str path-prefix "/user/delete*") {params :params}
          (do
-           (if (not (form-cancelled params))
-             ((data-fns :delete) :app_user (:id params)))
+           (if (not (form-cancelled? params))
+             ((data-fns :delete) :app_user (get params "id")))
            (redirect "list")))))

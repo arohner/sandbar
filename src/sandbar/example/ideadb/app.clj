@@ -39,12 +39,13 @@
 (def app
      (-> development-routes
          with-db-configured
-         #_(with-security security-config basic-auth)
+         (with-security security-config basic-auth)
          wrap-session
          wrap-params
          (wrap-file "public")
          wrap-file-info
-         #_(with-secure-channel security-config 8080 8443)))
+         (with-secure-channel security-config 8080 8443)
+         wrap-stacktrace))
 
 (run-jetty (var app) {:ssl? true :port 8080 :ssl-port 8443
                       :keystore "my.keystore"

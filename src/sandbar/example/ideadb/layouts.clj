@@ -53,9 +53,9 @@
          [:div {:id "footer"}
           [:div "For questions on the idea database please contact the system
                  administrator at 555-5555."]
-          (if (not (nil? (current-user request)))
+          (if (not (nil? (current-user)))
             [:div "You are currently logged in as "
-           [:b (current-username request)] ". "
+           [:b (current-username)] ". "
            (clink-to "/logout" "logout")])]]]]]
      (javascript "ideadb.js")]]))
 
@@ -87,7 +87,7 @@
                (if (any-role-granted? request :admin)
                  [:div {:id "form-page-header"}]
                  [:div {:id "form-page-header"}
-                  (str "Welcome " (:name (current-user request))
+                  (str "Welcome " (:name (current-user))
                        "! Use the form below to submit your idea.")])
                request
                body))

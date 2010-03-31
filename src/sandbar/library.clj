@@ -177,28 +177,6 @@
 ;; =====
 ;;
 
-#_(defn get-filters-from-url [url]
-  {})
-
-#_(defn get-sort-and-page-from-url [url]
-  (reduce
-   (fn [a b]
-     (merge-with concat a
-            (let [command (first b)
-                  params (last b)]
-              (cond (= command "/sort")
-                    {:sort [(keyword (first params))
-                            (keyword (last params))]}
-                    (= command "/page")
-                    {:page [(first params) (last params)]}
-                    :else {}))))
-   {}
-   (map #(vector (first %)
-                 (rest (re-split #"/" (last %))))
-        (partition 2
-                   (rest
-                    (re-partition #"/sort|/filter|/page" url))))))
-
 (defn merge-table-state-vecs [old new]
   (let [order (distinct
                (concat (map first (partition 2 old))
@@ -212,32 +190,31 @@
             (filter #(not (= :remove (last %)))
                     (map #(vector % (m %)) order))))))
 
-(defn update-table-state! [table-name request]
-  (let [params (:params request)]
-    (-> (update-session!
-         (fn [a b]
-           (let [current-state (or (-> a :table-state table-name) {})]
-             (-> a
-                 (assoc-in [:table-state table-name]
-                           (merge-with merge-table-state-vecs
-                                       current-state
-                                       b)))))
-         (merge
-          (hash-map :sort
-                    (vec (concat
-                          (if-let [sort (:sort-asc params)]
-                            [(keyword sort) :asc])
-                          (if-let [sort (:sort-desc params)]
-                            [(keyword sort) :desc])
-                          (if-let [sort (:remove-sort params)]
-                            [(keyword sort) :remove]))))
-          (hash-map :filter
-                    (vec (concat
-                          (if-let [filter (:filter params)]
-                            [(keyword filter) (:filter-value params)])
-                          (if-let [filter (:remove-filter params)]
-                            [(keyword filter) :remove]))))))
-        :table-state table-name)))
+(defn update-table-state! [table-name params]
+  (-> (update-session!
+       (fn [a b]
+         (let [current-state (or (-> a :table-state table-name) {})]
+           (-> a
+               (assoc-in [:table-state table-name]
+                         (merge-with merge-table-state-vecs
+                                     current-state
+                                     b)))))
+       (merge
+        (hash-map :sort
+                  (vec (concat
+                        (if-let [sort (get params "sort-asc")]
+                          [(keyword sort) :asc])
+                        (if-let [sort (get params "sort-desc")]
+                          [(keyword sort) :desc])
+                        (if-let [sort (get params "remove-sort")]
+                          [(keyword sort) :remove]))))
+        (hash-map :filter
+                  (vec (concat
+                        (if-let [filter (get params "filter")]
+                          [(keyword filter) (get params "filter-value")])
+                        (if-let [filter (get params "remove-filter")]
+                          [(keyword filter) :remove]))))))
+      :table-state table-name))
 
 (defn build-page-and-sort-map [table-state-map]
   (assoc {} :sort
@@ -251,12 +228,12 @@
           {}
           (partition 2 (:filter table-state-map))))
 
-(defn current-filters! [table-name request]
- (let [t-state (update-table-state! table-name request)]
+(defn current-filters! [table-name params]
+ (let [t-state (update-table-state! table-name params)]
     (build-filter-map t-state)))
 
-(defn current-page-and-sort! [table-name request]
-  (let [t-state (update-table-state! table-name request)]
+(defn current-page-and-sort! [table-name params]
+  (let [t-state (update-table-state! table-name params)]
     (build-page-and-sort-map t-state)))
 
 (defn get-column-name [column-spec-row]
@@ -411,12 +388,12 @@
                                         (last %))
                                #(partition 2 %))))))
 
-(defn filter-and-sort-table [request t-spec column-spec cell-fn data-fn]
+(defn filter-and-sort-table [params t-spec column-spec cell-fn data-fn]
   (let [props (:props t-spec)
         t-name (:name t-spec)
         table-data (data-fn (:type t-spec)
-                            (current-filters! t-name request)
-                            (current-page-and-sort! t-name request))
+                            (current-filters! t-name params)
+                            (current-page-and-sort! t-name params))
         columns (table-column-names column-spec)]
     [:div {:class "filter-and-sort-table"}
    (create-table-sort-and-filter-controls t-name props)
@@ -438,6 +415,11 @@
 ;; Forms
 ;; =====
 ;;
+
+(defn get-params [key-map params]
+  (reduce (fn [a b] (assoc a (keyword b) (get params b)))
+          {}
+          (map name key-map)))
 
 (defn cancel-button []
   [:input {:type "submit" :value "Cancel" :name "cancel"}])
@@ -492,8 +474,8 @@
              "&nbsp;&nbsp;"
              (reset-button "Reset")]]])])
 
-(defn form-cancelled [params]
-  (= "Cancel" (:cancel params)))
+(defn form-cancelled? [params]
+  (= "Cancel" (get params "cancel")))
 
 (defn form-field-label [title req]
   [:div {:class "field-label"} title
@@ -550,9 +532,9 @@
   [m params cb-set]
   (let [new-map (reduce
                  (fn [a b]
-                   (if (and (contains? cb-set (key b))
+                   (if (and (contains? cb-set (keyword (key b)))
                             (= "checkbox-true" (val b)))
-                     (assoc a (key b) "Y")
+                     (assoc a (keyword (key b)) "Y")
                      a))
                  m
                  params)]
@@ -578,7 +560,7 @@
   "Add the key k to the map m where the value of k is is a vector of
    selected values."
   [m params k]
-  (let [v (k params)
+  (let [v (get params k)
         value-seq (if (string? v) [v] v)]
     (assoc m k (vec (filter #(not (nil? %)) value-seq)))))
 
@@ -808,38 +790,38 @@
           (.startsWith action "/add")
           (list-editor-form find-by-id-fn type props request)
           (.startsWith action "/edit")
-          (list-editor-form find-by-id-fn type props request (params :id))
+          (list-editor-form find-by-id-fn type props request (get params "id"))
           (.startsWith action "/delete")
-          (confirm-delete find-by-id-fn type props (params :id))
+          (confirm-delete find-by-id-fn type props (get params "id"))
           :else "This action is not implemented...")))
 
 (defn validate-list-item [props form-data]
   (required-field form-data :name "Please enter a name."))
 
-(defn save-list-item [save-fn type form-data action request]
-  (cond (invalid? type validate-list-item {} form-data request) action
+(defn save-list-item [save-fn type form-data action]
+  (cond (invalid? type validate-list-item {} form-data) action
          :else (do (save-fn form-data)
                    "list")))
 
-(defn list-updater [save-fn delete-by-id-fn type request params]
+(defn list-updater [save-fn delete-by-id-fn type params]
   (let [action (params :*)]
     (redirect
-     (cond (form-cancelled params) "list"
+     (cond (form-cancelled? params) "list"
            (.startsWith action "/add")
            (save-list-item save-fn
                            type
-                           {:type type :name (params :name)}
-                           "add"
-                           request)
+                           {:type type :name (get params "name")}
+                           "add")
            (.startsWith action "/edit")
            (save-list-item save-fn
                            type
-                           {:type type :name (params :name) :id (params :id)}
-                           "edit"
-                           request)
+                           {:type type
+                            :name (get params "name")
+                            :id (get params "id")}
+                           "edit")
            (.startsWith action "/delete")
            (do
-             (delete-by-id-fn type (params :id))
+             (delete-by-id-fn type (get params "id"))
              "list")
            :else "list"))))
 

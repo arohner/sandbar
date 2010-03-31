@@ -10,7 +10,7 @@
   "Middleware for working with 'stateful' sessions."
   (:use (ring.middleware session)))
 
-(declare *session*)
+(def *session* (atom nil))
 
 (defn wrap-stateful-session
   "Create a binding for *session* which is an atom containing the session

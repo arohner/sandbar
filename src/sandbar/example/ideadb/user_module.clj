@@ -110,7 +110,7 @@
     (html
     (generate-welcome-message request)
     (filter-and-sort-table
-     request
+     (:params request)
      {:type :idea :name :idea-table :props properties}
      (if admin 
        (conj idea-table-columns :empty) 
@@ -173,14 +173,12 @@
                                        (public-idea-fields))
                                      request))))
 
-(defn create-idea-from-params [request]
-  (let [params (:params request)
-        idea
-        (reduce (fn [a b] (assoc a b (params b)))
-                {}
-                [:id :description :name :customer_need :originator
-                 :category :idea_type :business_unit :status
-                 :date_entered :user_id])
+(defn create-idea-from-params [params]
+  (let [idea
+        (get-params [:id :description :name :customer_need :originator
+                     :category :idea_type :business_unit :status
+                     :date_entered :user_id]
+                    params)
         date (if-let [de (:date_entered idea)]
                (if (empty? de) (date-string) de)
                (date-string))
@@ -205,16 +203,16 @@
                          "Please enter a customer need.")))
       properties))
 
-(defn save-idea! [request action]
-  (let [form-data (create-idea-from-params request)
-        submit (-> request :params :submit)
+(defn save-idea! [params action]
+  (let [form-data (create-idea-from-params params)
+        submit (get params "submit")
         success (if (= submit "Save and New")
                   (cpath "/idea/new")
                   (cpath "/idea/list"))
         failure (cpath (str "/idea/" action))]
     (redirect
-     (cond (form-cancelled (:params request)) success
-           (invalid-idea?! form-data request) failure
+     (cond (form-cancelled? params) success
+           (invalid-idea?! form-data) failure
            :else (do
                    (set-flash-value! :user-message
                                      (if (= action "new")
@@ -242,7 +240,7 @@
        (form-layout "New Idea Form"
                     request
                     (new-idea-form request)))
-  (POST "/idea/new*" request (save-idea! request "new"))
+  (POST "/idea/new*" {params :params} (save-idea! params "new"))
   (GET "/idea/list*" request
        (if (or (admin-role? request)
                (user-has-ideas? request))

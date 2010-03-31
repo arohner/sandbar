@@ -69,54 +69,54 @@
      (t "when adding sort to initially empty state"
         (binding [*session* (atom {})]
           (is (= (update-table-state! :test-table
-                                      (test-request {:sort-asc "a"}))
+                                      {"sort-asc" "a"})
                  {:sort [:a :asc] :filter []}))))
      (t "when changing the direction of an existing sort"
         (binding [*session* (atom (test-table-state {:sort [:a :asc]}))]
           (is (= (update-table-state! :test-table
-                                      (test-request {:sort-desc "a"}))
+                                      {"sort-desc" "a"})
                  {:sort [:a :desc] :filter []}))))
      (t "when adding multiple sorts at the same time"
         (binding [*session* (atom (test-table-state {:sort [:a :asc]}))]
           (is (= (update-table-state!
                   :test-table
-                  (test-request {:sort-asc "b" :sort-desc "c"}))
+                  {"sort-asc" "b" "sort-desc" "c"})
                  {:sort [:a :asc :b :asc :c :desc] :filter []}))))
      (t "when adding a new sort to an existing sort"
         (binding [*session* (atom (test-table-state {:sort [:b :asc]}))]
           (is (= (update-table-state! :test-table
-                                      (test-request {:sort-desc "a"}))
+                                      {"sort-desc" "a"})
                  {:sort [:b :asc :a :desc] :filter []}))))
      (t "when removing an existing sort"
         (binding [*session* (atom (test-table-state
                                      {:sort [:b :asc :a :asc]}))]
           (is (= (update-table-state! :test-table
-                                      (test-request {:remove-sort "a"}))
+                                      {"remove-sort" "a"})
                  {:sort [:b :asc] :filter []})))))
   (t "update table filter state"
      (t "when adding filter to initially empty state"
         (binding [*session* (atom {})]
           (is (= (update-table-state!
                   :test-table
-                  (test-request {:filter "a" :filter-value "v-a"}))
+                  {"filter" "a" "filter-value" "v-a"})
                  {:sort [] :filter [:a "v-a"]}))))
      (t "when changing the value of a filter"
         (binding [*session* (atom (test-table-state {:filter [:a "v-a"]}))]
           (is (= (update-table-state!
                   :test-table
-                  (test-request {:filter "a" :filter-value "v-b"}))
+                  {"filter" "a" "filter-value" "v-b"})
                  {:sort [] :filter [:a "v-b"]}))))
      (t "when adding a new filter to an existing filter"
         (binding [*session* (atom (test-table-state {:filter [:b "v-b"]}))]
           (is (= (update-table-state!
                   :test-table
-                  (test-request {:filter "a" :filter-value "v-a"}))
+                  {"filter" "a" "filter-value" "v-a"})
                  {:sort [] :filter [:b "v-b" :a "v-a"]}))))
      (t "when removing an existing filter"
         (binding [*session* (atom (test-table-state
                                      {:filter [:b "v-b" :a "v-a"]}))]
           (is (= (update-table-state! :test-table
-                                      (test-request {:remove-filter "a"}))
+                                      {"remove-filter" "a"})
                  {:sort [] :filter [:b "v-b"]}))))))
 
 (deftest test-build-page-and-sort-map
@@ -129,8 +129,7 @@
 
 (deftest test-current-page-and-sort!
   (binding [*session* (atom (test-table-state {:sort [:b :asc]}))]
-    (is (= (current-page-and-sort! :test-table
-                                   (test-request {:sort-desc "a"}))
+    (is (= (current-page-and-sort! :test-table {"sort-desc" "a"})
            {:sort [:asc "b" :desc "a"]}))))
 
 (deftest test-create-table-sort-and-filter-controls

@@ -151,6 +151,7 @@ h4. TODO
 * How about some error handling code!!
 * Should be able to configure a default login redirect page. For when a user logs in but there is no redirect page in the session
 * Create a new version of app.clj that does not have URI based authentication but instead secures data in the model.
+* Make it easy for users of this lib to create a login form that may be embedded within a page.
 
 h2. Road map
 
