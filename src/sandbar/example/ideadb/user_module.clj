@@ -105,25 +105,26 @@
 (defn user-has-ideas? [request]
   (< 0 (count ((idea-table-records-function request) :idea {} {}))))
 
-(defn idea-list [request] 
+(defn idea-list [request]
   (let [admin (admin-role? request)]
-    (html
     (generate-welcome-message request)
-    (filter-and-sort-table
-     (:params request)
-     {:type :idea :name :idea-table :props properties}
-     (if admin 
-       (conj idea-table-columns :empty) 
-       idea-table-columns)
-     (fn [k row-data]
-       (cond (= k :name)
-             (if admin
-               (clink-to (str "/idea/edit?id=" (:id row-data)) (:name row-data))
-               (:name row-data))
-             (= k :empty)
-             (clink-to (str "/idea/delete?id=" (:id row-data)) "Delete")
-             :else (k row-data)))
-     (idea-table-records-function request)))))
+    (html
+     (filter-and-sort-table
+      (:params request)
+      {:type :idea :name :idea-table :props properties}
+      (if admin 
+        (conj idea-table-columns :empty)
+        idea-table-columns)
+      (fn [k row-data]
+        (cond (= k :name)
+              (if admin
+                (clink-to (str "/idea/edit?id=" (:id row-data))
+                          (:name row-data))
+                (:name row-data))
+              (= k :empty)
+              (clink-to (str "/idea/delete?id=" (:id row-data)) "Delete")
+              :else (or (k row-data) "")))
+      (idea-table-records-function request)))))
 
 (defn public-idea-fields []
   [(form-textarea "What is your idea?  Describe your new idea in 100 words

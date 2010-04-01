@@ -11,18 +11,13 @@
         (ring.util [response :only (redirect)]
                    [codec :only (url-encode)])
         (sandbar stateful-session)
-        [clojure.contrib.str-utils :only (re-split re-partition)]))
+        (clojure.contrib [str-utils :only (re-split re-partition)]
+                         [str-utils2 :only (capitalize)])))
 
 ;;
 ;; Util
 ;; ====
 ;;
-
-(defn capitalize
-  "Uppercase the first letter of a string, and lowercase the rest."
-  [s]
-  (str (.toUpperCase (subs s 0 1))
-       (.toLowerCase (subs s 1))))
 
 (defn random-between [lo hi]
   (let [r (java.util.Random.)
@@ -398,20 +393,20 @@
                             (current-page-and-sort! t-name params))
         columns (table-column-names column-spec)]
     [:div {:class "filter-and-sort-table"}
-   (create-table-sort-and-filter-controls t-name props)
-   [:table {:class "list"}
+     (create-table-sort-and-filter-controls t-name props)
+     [:table {:class "list"}
       (sort-table-header t-name props column-spec)
-   (map
-    (fn [row-data class]
-      (table-row (map #(hash-map
-                        :column (get-column-name %)
-                        :value (cell-fn (get-column-name %) row-data)
-                        :attr {:align (if-let [a (:align %)] a :left)}
-                        :actions (:actions %))
-                      column-spec)
-                 class))
-    table-data
-    (cycle ["odd" "even"]))]]))
+      (map
+       (fn [row-data class]
+         (table-row (map #(hash-map
+                           :column (get-column-name %)
+                           :value (cell-fn (get-column-name %) row-data)
+                           :attr {:align (if-let [a (:align %)] a :left)}
+                           :actions (:actions %))
+                         column-spec)
+                    class))
+       table-data
+       (cycle ["odd" "even"]))]]))
 
 ;;
 ;; Forms
@@ -562,7 +557,7 @@
   "Add the key k to the map m where the value of k is is a vector of
    selected values."
   [m params k]
-  (let [v (get params k)
+  (let [v (get params (name k))
         value-seq (if (string? v) [v] v)]
     (assoc m k (vec (filter #(not (nil? %)) value-seq)))))
 

@@ -12,7 +12,7 @@
         (ring.util [response :only (redirect)])
         (sandbar library auth basic_authentication userui)
         (sandbar.example.ideadb
-         [layouts :only (main-layout form-layout)]
+         [layouts :only (main-layout form-layout admin-users-layout)]
          [model]
          [user_module])))
 
@@ -136,11 +136,12 @@
   (POST "/admin/type*" {params :params}
         (my-list-updater :idea_type params))
   (GET "/idea/download*" []
-       [{:headers {"Content-Type" "application/vnd.ms-excel"
+       {:status 200
+        :headers {"Content-Type" "application/vnd.ms-excel"
                    "Content-disposition"
-                   "attachment;filename=\"ideadb.csv\""}} 
-        (download-ideas)])
-  (security-edit-user-routes "/admin" main-layout (fn [r] (:uri r))
+                   "attachment;filename=\"ideadb.csv\""}
+        :body (download-ideas)})
+  (security-edit-user-routes "/admin" (var admin-users-layout) (fn [r] (:uri r))
                              properties user-data-functions)
   (security-login-routes "" main-layout (fn [r] (:uri r))
                          properties user-data-functions))

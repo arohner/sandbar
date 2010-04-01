@@ -7,6 +7,7 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.example.ideadb.layouts
+  (:require [clojure.contrib.str-utils2 :as s])
   (:use (hiccup core page-helpers)
         [sandbar.library]
         (sandbar [auth :only (current-user
@@ -21,7 +22,7 @@
    [:html
     [:head
      [:meta {:http-equiv "X-UA-Compatible" :content "IE=EmulateIE7"}]
-     [:title (str "Idea Database - " (capitalize title))]
+     [:title (str "Idea Database - " (s/capitalize title))]
      (icon "icon.png")
      (stylesheet "ideadb.css")]
     [:body
@@ -91,6 +92,17 @@
                        "! Use the form below to submit your idea.")])
                request
                body))
+
+(defn admin-users-layout [title request & body]
+  (base-layout title
+               [:div {:id "form-page-header"}]
+               request
+               (if (.endsWith (:uri request) "list")
+                 [:div
+                  [:div (clink-to "/admin/list" "Return to Edit Lists")]
+                  [:br]
+                  body]
+                 body)))
 
 
 

@@ -12,11 +12,6 @@
                  stateful-session
                  [test :only (t)])))
 
-(deftest test-capitalize
-  (is (= (capitalize "word") "Word"))
-  (is (= (capitalize "Word") "Word"))
-  (is (= (capitalize "WORD") "Word")))
-
 (defn test-request [params]
   {:params params})
 
@@ -165,12 +160,12 @@
   (t "get multi checkbox"
      (t "when one item is seleted"
         (is (= (get-multi-checkbox {}
-                                   {:a "a"}
+                                   {"a" "a"}
                                    :a)
                {:a ["a"]})))
      (t "when two items are seleted"
         (is (= (get-multi-checkbox {}
-                                   {:a ["a" "b"]}
+                                   {"a" ["a" "b"]}
                                    :a)
                {:a ["a" "b"]})))
      (t "when nothing is seleted"

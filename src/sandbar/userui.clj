@@ -120,7 +120,7 @@
         failure (cpath (:uri request))]
     (redirect
      (cond (form-cancelled? (:params request)) success
-           (invalid-user?! props form-data request) failure
+           (invalid-user?! props form-data) failure
            :else (do
                    (save-or-update-fn (dissoc form-data :new_password))
                    (set-flash-value! :user-message
