@@ -12,18 +12,37 @@
 
 (declare *sandbar-session*)
 
-(defn wrap-stateful-session
-  "Create a binding for *sandbar-session* which is an atom containing the session
-   map. The contents of this atom will only be put in the response if the
-   response does not already contain a :session key."
+(defn wrap-stateful-session*
+  "Add stateful sessions to a ring handler. Does not modify the functional
+   behavior of ring sessions except that returning nil will not remove
+   the session if you have stateful data. Creates a separate namespace
+   for stateful session keys so that user code and library code will not
+   interfere with one another."
   [handler]
+  (fn [request]
+    (binding [*sandbar-session* (atom
+                                 (-> request :session :sandbar-session))]
+        (let [response (handler request)
+              sandbar-session @*sandbar-session*
+              sandbar-session (if (empty? sandbar-session)
+                                nil
+                                sandbar-session)
+              request-session (dissoc (:session request) :sandbar-session)
+              response-session (:session response)
+              session  (if (contains? response :session)
+                         (or response-session {})
+                         request-session) 
+              session (if sandbar-session
+                        (assoc session :sandbar-session sandbar-session)
+                        session)]
+          (if (not (or (nil? session)
+                       (empty? session)))
+            (merge response {:session session})
+            (dissoc response :session))))))
+
+(defn wrap-stateful-session [handler]
   (wrap-session
-   (fn [request]
-      (binding [*sandbar-session* (atom (:session request))]
-        (let [response (handler request)]
-          (if (:session response)
-            response
-            (merge response {:session @*sandbar-session*})))))))
+   (wrap-stateful-session* handler)))
 
 (defn update-session! [update-fn value]
   (swap! *sandbar-session* update-fn value))

@@ -8,7 +8,8 @@
 
 (ns sandbar.example.stateful-sessions
   "Illustrating the difference between functional and statful session
-   manipulation. Also showing that they can be used simultaniously."
+   manipulation. Also showing that they can be used simultaniously
+   buy do not interfere with one another."
   (:use (compojure core)
         (ring.adapter jetty)
         (ring.middleware params)
@@ -17,7 +18,7 @@
 (defn functional-handler
   "Functional style of working with a session."
   [request]
-  (println request)
+  (println-x request)
   (let [counter (if-let [counter (-> request :session :counter)]
                   (+ counter 1)
                   1)]

@@ -9,8 +9,12 @@
 (ns sandbar.test_basic_authentication
   (:use [clojure.test]
         (ring.util [response :only (redirect)])
-        (sandbar stateful-session library auth basic_authentication)
-        [sandbar.test :only (t)]))
+        (sandbar stateful-session
+                 library
+                 auth
+                 basic_authentication
+                 test-fixtures
+                 [test :only (t)])))
 
 (defn test-login-load-fn
   ([k] (test-login-load-fn k {} {}))
@@ -64,3 +68,56 @@
                    (redirect "login")))
             (is (= @*sandbar-session*
                    {:auth-redirect-uri "/test"})))))))
+
+(deftest test-with-security-with-basic-auth
+  (binding [*sandbar-session* (atom {})]
+    (t "with security using basic auth"
+       (t "url config"
+         (binding [app-context (atom "")
+                   with-security (partial with-security
+                                          :uri
+                                          fixture-security-config)]
+           (t "redirect to login when user auth required and user is nil"
+              (let [result ((with-security basic-auth)
+                            {:uri "/admin/page"})]
+                (is (= result
+                       (redirect "/login")))
+                (is (= (:auth-redirect-uri @*sandbar-session*)
+                       "/admin/page"))))
+           (t "redirect to login with a uri-prefix"
+              (is (= ((with-security basic-auth "/prefix")
+                      {:uri "/admin/page"})
+                     (redirect "/prefix/login"))))
+           (t "allow access when auth is not required"
+              (is (= ((with-security basic-auth)
+                      {:uri "/test.css"})
+                     "/test.css")))
+           (t "redirect to permission denied when valid user without role"
+              (is (= ((with-security basic-auth)
+                      {:uri "/admin/page"
+                       :session {:current-user {:name "testuser"
+                                                :roles #{:user}}}})
+                     (redirect "/permission-denied"))))
+           (t "allow access when user is in correct role"
+              (is (= ((with-security basic-auth)
+                      {:uri "/some/page"
+                       :session {:current-user {:name "testuser"
+                                                :roles #{:user}}}})
+                     (res-200-and-user "/some/page" {:name "testuser"
+                                                     :roles #{:user}}))))))
+      (t "and NO url config"
+         (binding [app-context (atom "")]
+           (t "redirect to permission denied when access exception is thrown"
+              (is (= ((with-security
+                        (fn [r] (access-error "testing with-security"))
+                        []
+                        basic-auth)
+                      {:uri "/x"})
+                     (redirect "/permission-denied"))))
+           (t "redirect to login when authorization exception is thrown"
+              (is (= ((with-security
+                        (fn [r] (authentication-error "testing with-security"))
+                        []
+                        basic-auth)
+                      {:uri "/x"})
+                     (redirect "/login")))))))))

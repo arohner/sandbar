@@ -13,14 +13,7 @@
         (sandbar [library :only (remove-cpath
                                  redirect?
                                  redirect-301
-                                 append-to-redirect-loc)]
-                 stateful-session)))
-
-;; You may not need to use stateful sessions here. The only thing that
-;; matters is that *current-user* is defined. The with secutiry
-;; function will just need to ensure that the response contians the
-;; user. This means that you will need to change the stateful session
-;; so that it will merge the returned session and the stateful session.
+                                 append-to-redirect-loc)])))
 
 (def *hash-delay* 1000)
 
@@ -33,11 +26,6 @@
 (kit/deferror *authentication-error* [] [n]
   {:msg (str "Authentication error: " n)
    :unhandled (kit/throw-msg Exception)})
-
-;;
-;; Helpers
-;; =======
-;;
 
 (defn- redirect-to-permission-denied [uri-prefix]
   (redirect (str uri-prefix "/permission-denied")))
@@ -149,8 +137,9 @@
 ;; ===
 ;;
 
-(defn current-user []
-  (or *sandbar-current-user* (session-get :current-user)))
+(defn current-user
+  ([] *sandbar-current-user*)
+  ([request] (-> request :session :current-user)))
 
 (defn current-username []
   (:name (current-user)))
@@ -201,8 +190,17 @@
             (redirect-301 (to-http request port))
             :else (handler request)))))
 
-(defn put-user-in-session! [user]
-  (session-put! :current-user user))
+(defn add-current-user-to-response [response request]
+  (if *sandbar-current-user*
+    (let [session (assoc (:session request)
+                    :current-user *sandbar-current-user*)]
+      (if (string? response)
+        {:status  200
+         :headers {"Content-Type" "text/html"}
+         :body    response
+         :session session}
+        (assoc response :session session)))
+    response))
 
 (defn with-security
   "Middleware function for authentication and authorization."
@@ -210,7 +208,7 @@
   ([handler config auth-fn uri-prefix]
      (fn [request]
        (let [required-roles (required-roles config request)
-             user (current-user)
+             user (current-user request)
              user-status (if (and (auth-required? required-roles)
                                   (nil? user))
                            (auth-fn request)
@@ -219,20 +217,21 @@
                (append-to-redirect-loc user-status uri-prefix)
                (allow-access? required-roles (:roles user-status))
                (binding [*sandbar-current-user* user-status]
-                 (kit/with-handler
-                   (handler request)
-                   (kit/handle *access-error* [n]
-                               (redirect-to-permission-denied uri-prefix))
-                   (kit/handle *authentication-error* [n]
-                               (if *sandbar-current-user*
-                                 (redirect-to-authentication-error uri-prefix)
-                                 (let [user-status (auth-fn request)]
-                                   (if (redirect? user-status)
-                                     (append-to-redirect-loc user-status
-                                                             uri-prefix)
-                                     (do (put-user-in-session! user-status)
-                                         (set! *sandbar-current-user*
-                                               user-status)
-                                         (handler request))))))))
+                 (-> (kit/with-handler
+                       (handler request)
+                       (kit/handle *access-error* [n]
+                                   (redirect-to-permission-denied uri-prefix))
+                       (kit/handle *authentication-error* [n]
+                                   (if *sandbar-current-user*
+                                     (redirect-to-authentication-error
+                                      uri-prefix)
+                                     (let [user-status (auth-fn request)]
+                                       (if (redirect? user-status)
+                                         (append-to-redirect-loc user-status
+                                                                 uri-prefix)
+                                         (do (set! *sandbar-current-user*
+                                                   user-status)
+                                             (handler request)))))))
+                     (add-current-user-to-response request)))
                :else (redirect-to-permission-denied uri-prefix))))))
              
