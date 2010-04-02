@@ -10,40 +10,40 @@
   "Middleware for working with 'stateful' sessions."
   (:use (ring.middleware session)))
 
-(declare *session*)
+(declare *sandbar-session*)
 
 (defn wrap-stateful-session
-  "Create a binding for *session* which is an atom containing the session
+  "Create a binding for *sandbar-session* which is an atom containing the session
    map. The contents of this atom will only be put in the response if the
    response does not already contain a :session key."
   [handler]
   (wrap-session
    (fn [request]
-      (binding [*session* (atom (:session request))]
+      (binding [*sandbar-session* (atom (:session request))]
         (let [response (handler request)]
           (if (:session response)
             response
-            (merge response {:session @*session*})))))))
+            (merge response {:session @*sandbar-session*})))))))
 
 (defn update-session! [update-fn value]
-  (swap! *session* update-fn value))
+  (swap! *sandbar-session* update-fn value))
 
 (defn session-put! [k v]
-  (swap! *session* (fn [a b] (merge a {k b})) v))
+  (swap! *sandbar-session* (fn [a b] (merge a {k b})) v))
 
 (defn session-get
   ([k] (session-get k nil))
   ([k default] (if (vector? k)
-                 (get-in @*session* k)
-                 (get @*session* k default))))
+                 (get-in @*sandbar-session* k)
+                 (get @*sandbar-session* k default))))
 
 (defn session-delete-key! [k]
-  (swap! *session* (fn [a b] (dissoc a b)) k))
+  (swap! *sandbar-session* (fn [a b] (dissoc a b)) k))
 
 (defn set-flash-value! [k v]
   (session-put! k v))
 
 (defn get-flash-value! [k]
-  (let [v (get @*session* k)]
+  (let [v (get @*sandbar-session* k)]
     (do (session-delete-key! k)
         v)))

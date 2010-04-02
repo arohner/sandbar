@@ -10,19 +10,21 @@
   (:use (ring.util [response :only (redirect)])
         (clojure [set :only (intersection)])
         (clojure.contrib [error-kit :as kit])
-        (sandbar [library :only (cpath
-                                 remove-cpath
+        (sandbar [library :only (remove-cpath
                                  redirect?
                                  redirect-301
                                  append-to-redirect-loc)]
                  stateful-session)))
 
-;; TODO remove the dependency on stateful-session. You will want people
-;; to use this without having to use stateful sessions.
+;; You may not need to use stateful sessions here. The only thing that
+;; matters is that *current-user* is defined. The with secutiry
+;; function will just need to ensure that the response contians the
+;; user. This means that you will need to change the stateful session
+;; so that it will merge the returned session and the stateful session.
 
 (def *hash-delay* 1000)
 
-(def *current-user* nil)
+(def *sandbar-current-user* nil)
 
 (kit/deferror *access-error* [] [n]
   {:msg (str "Access error: " n)
@@ -33,8 +35,8 @@
    :unhandled (kit/throw-msg Exception)})
 
 ;;
-;; Helpers - Pure Functions
-;; ========================
+;; Helpers
+;; =======
 ;;
 
 (defn- redirect-to-permission-denied [uri-prefix]
@@ -148,7 +150,7 @@
 ;;
 
 (defn current-user []
-  (or *current-user* (session-get :current-user)))
+  (or *sandbar-current-user* (session-get :current-user)))
 
 (defn current-username []
   (:name (current-user)))
@@ -158,8 +160,8 @@
 
 (defn any-role-granted?
   "Determine if any of the passed roles are granted. The first argument must
-   be the request unless we are running in a context in which *current-user*
-   is defined."
+   be the request unless we are running in a context in which
+   *sandbar-current-user* is defined."
   [& roles]
   (let [user-roles (current-user-roles)]
     (intersect-exists? user-roles (set roles))))
@@ -173,7 +175,7 @@
   ([n] (kit/raise *authentication-error* n)))
 
 (defmacro ensure-authenticated [& body]
-  `(if *current-user*
+  `(if *sandbar-current-user*
      (do ~@body)
      (authentication-error)))
 
@@ -216,20 +218,21 @@
          (cond (redirect? user-status)
                (append-to-redirect-loc user-status uri-prefix)
                (allow-access? required-roles (:roles user-status))
-               (binding [*current-user* user-status]
+               (binding [*sandbar-current-user* user-status]
                  (kit/with-handler
                    (handler request)
                    (kit/handle *access-error* [n]
                                (redirect-to-permission-denied uri-prefix))
                    (kit/handle *authentication-error* [n]
-                               (if *current-user*
+                               (if *sandbar-current-user*
                                  (redirect-to-authentication-error uri-prefix)
                                  (let [user-status (auth-fn request)]
                                    (if (redirect? user-status)
                                      (append-to-redirect-loc user-status
                                                              uri-prefix)
                                      (do (put-user-in-session! user-status)
-                                         (set! *current-user* user-status)
+                                         (set! *sandbar-current-user*
+                                               user-status)
                                          (handler request))))))))
                :else (redirect-to-permission-denied uri-prefix))))))
              

@@ -18,14 +18,21 @@
          (concat v s))))
 
 (defn parse-block [s]
-  (let [string-as-data (read-string s)
-        fn-key (keyword (first string-as-data))
-        attrs (second string-as-data)
+  (let [string-parts (-> s
+                         (s/drop 1)
+                         s/chop
+                         s/ltrim
+                         (s/split #"\s"))
+        fn-key (keyword (s/trim (first string-parts)))
+        attrs (second string-parts)
+        attrs (if (re-matches #"\{.*\}" attrs)
+                (read-string attrs)
+                nil)
         inner-string (pre-process-string
                       (apply str
                              (interpose " "
-                                        (drop (if (map? attrs) 2 1)
-                                              string-as-data))))]
+                                        (drop (if attrs 2 1)
+                                              string-parts))))]
     (vec (filter #(not (and (string? %)
                             (empty? %)))
                  (if (map? attrs)

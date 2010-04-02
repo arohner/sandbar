@@ -34,7 +34,7 @@
 
 (deftest test-authenticate!
   (t "authenticate!"
-     (binding [*session* (atom {})]
+     (binding [*sandbar-session* (atom {})]
        (t "with missing username"
           (is (= (authenticate! test-login-load-fn
                                 {}
@@ -46,21 +46,21 @@
                               {"username" "u"})
                (redirect "login")))))
      (t "with correct password"
-        (binding [*session* (atom {:auth-redirect-uri "/test"})]
+        (binding [*sandbar-session* (atom {:auth-redirect-uri "/test"})]
           (let [result (authenticate! test-login-load-fn
                                       {}
                                       {"username" "u" "password" "test"})]
             (is (= result
                    (redirect "/test")))
-            (is (= @*session*
+            (is (= @*sandbar-session*
                    {:current-user {:name "u"
                                    :roles #{:admin}}})))))
      (t "with incorrect password"
-        (binding [*session* (atom {:auth-redirect-uri "/test"})]
+        (binding [*sandbar-session* (atom {:auth-redirect-uri "/test"})]
           (let [result (authenticate! test-login-load-fn
                                       {}
                                       {"username" "u" "password" "wrong"})]
             (is (= result
                    (redirect "login")))
-            (is (= @*session*
+            (is (= @*sandbar-session*
                    {:auth-redirect-uri "/test"})))))))

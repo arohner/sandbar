@@ -7,7 +7,8 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.example.stateful-sessions
-  "Simple example of working with stateful sessions."
+  "Illustrating the difference between functional and statful session
+   manipulation. Also showing that they can be used simultaniously."
   (:use (compojure core)
         (ring.adapter jetty)
         (ring.middleware params)

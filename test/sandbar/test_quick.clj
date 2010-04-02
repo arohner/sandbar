@@ -12,12 +12,22 @@
         (sandbar quick
                  [test :only (t)])))
 
+(deftest test-conj-or-concat
+  (is (= (conj-or-concat [:a] "ab")
+         [:a "ab"]))
+  (is (= (conj-or-concat [:a] [:b :c])
+         [:a :b :c])))
+
 (deftest test-parse-block
   (is (= (parse-block "[a s]")
          [:a "s"]))
   (is (= (parse-block "[a [b s]]")
          [:a [:b "s"]]))
   (is (= (parse-block "[a [b s] x]")
+         [:a [:b "s"] " x"]))
+  (is (= (parse-block "[a [[b s] x]")
+         [:a "[[b s]" " x"]))
+  (is (= (parse-block "[ a [ b s] x]")
          [:a [:b "s"] " x"])))
 
 (deftest test-block?

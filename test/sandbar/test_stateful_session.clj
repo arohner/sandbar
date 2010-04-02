@@ -14,7 +14,7 @@
 (deftest test-session-put!
   (t "put in session"
      (t "one element"
-        (binding [*session* (atom {})]
+        (binding [*sandbar-session* (atom {})]
           (is (= (-> (session-put! :t "t")
                      :t)
                  "t"))))))
