@@ -7,7 +7,10 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.example.ideadb.model
-  (:use (sandbar [auth :only (current-user)]
+  (:use (sandbar [auth :only (current-user
+                              ensure-any-role-if
+                              ensure-any-role
+                              ensure-authenticated)]
                  [database :only (find-in delete-record save-or-update)])
         [clojure.contrib.str-utils :only (re-split re-partition)]))
 
@@ -48,7 +51,8 @@
   ([type]
      (filter-and-sort-records type {} {}))
   ([type filters sort-and-page]
-     (find-in @db type filters sort-and-page)))
+     (ensure-any-role-if (= type :idea) #{:user :admin}
+        (find-in @db type filters sort-and-page))))
 
 (defn find-by-id [type id]
   (first (find-in @db type {:id id})))

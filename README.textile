@@ -1,12 +1,12 @@
 h1. Sandbar
 
-Sandbar is a set of libraries for web applications which is designed to be used with "Compojure":http://github.com/weavejester/compojure and/or "Ring":http://github.com/mmcgrana/ring. It contains will contain code to help with: 
+Sandbar is a library for web applications which is designed to be used with "Compojure":http://github.com/weavejester/compojure and/or "Ring":http://github.com/mmcgrana/ring. It is a work in progress. The following features will be implemented in order. 
 
-* Authorization and authentication
-* CSS builder
 * Form layout, validation and error reporting
+* Authorization and authentication
 * Tables which may be filtered, sorted and paged
 * User management
+* CSS builder
 * Some kind of interface to Lucene (Solr)
 * A Ring session storage engine backed by FleetDB, Memcached or mstate???
 
@@ -20,11 +20,17 @@ The reference application demonstrates how to use the sandbar libraries.
 
 To run the reference application, follow these steps:
 
-# Create a MySQL database on localhost named idea_db
-# Create a MySQL user named idea_user@localhost with password 123456789
-# Give the above user all privileges on the idea_db database.
-# "Install Leiningen":http://github.com/technomancy/leiningen
-# Execute the following commands:
+* "Install Leiningen":http://github.com/technomancy/leiningen
+* Configure MySQL
+
+<pre>
+<code> 
+CREATE DATABASE idea_db;
+GRANT ALL PRIVILEGES ON idea_db.* TO idea_user@localhost IDENTIFIED BY '123456789';
+</code>
+</pre>
+
+* Execute the following commands:
 
 <pre>
 <code> 

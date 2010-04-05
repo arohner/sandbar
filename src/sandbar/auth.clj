@@ -13,7 +13,8 @@
         (sandbar [library :only (remove-cpath
                                  redirect?
                                  redirect-301
-                                 append-to-redirect-loc)])))
+                                 append-to-redirect-loc)]
+                 stateful-session)))
 
 (def *hash-delay* 1000)
 
@@ -51,7 +52,7 @@
 (defn- role? [x]
   (not (or (= x :ssl) (= x :nossl) (= x :any-channel))))
 
-(defn- role-set
+(defn role-set
   "Return a set of roles or nil. The input could be a single role, a set of
    roles, :ssl or :nossl. The last two are not roles."
   [role]
@@ -137,9 +138,8 @@
 ;; ===
 ;;
 
-(defn current-user
-  ([] *sandbar-current-user*)
-  ([request] (-> request :session :current-user)))
+(defn current-user []
+  (or *sandbar-current-user* (session-get :current-user)))
 
 (defn current-username []
   (:name (current-user)))
@@ -177,6 +177,27 @@
                          " is not in one of "
                          ~roles)))))
 
+#_(defmacro ensure-any-role-if [& clauses]
+  (let [pred# (first clauses)
+        roles# (second clauses)
+        body# (last clauses)
+        next# (if (> (count (drop 2 clauses)) 2)
+                (cons 'ensure-any-role-if (drop 2 clauses))
+                `(do ~body#))]
+     `(if ~pred#
+        (ensure-any-role ~roles# ~body#)
+        ~next#)))
+
+(defmacro ensure-any-role-if [& clauses]
+  (if (odd? (count clauses))
+    (if (= 1 (count clauses))
+      (first clauses)
+      (list 'if (first clauses)
+            (list 'sandbar.auth/ensure-any-role (second clauses) (last clauses))
+            (cons 'sandbar.auth/ensure-any-role-if (drop 2 clauses))))
+    (throw (IllegalArgumentException.
+            "ensure-any-role-if must have an odd number of forms"))))
+
 (defn with-secure-channel
   "Middleware function to redirect to either a secure or insecure channel."
   [handler config port ssl-port]
@@ -190,25 +211,13 @@
             (redirect-301 (to-http request port))
             :else (handler request)))))
 
-(defn add-current-user-to-response [response request]
-  (if *sandbar-current-user*
-    (let [session (assoc (:session request)
-                    :current-user *sandbar-current-user*)]
-      (if (string? response)
-        {:status  200
-         :headers {"Content-Type" "text/html"}
-         :body    response
-         :session session}
-        (assoc response :session session)))
-    response))
-
 (defn with-security
   "Middleware function for authentication and authorization."
   ([handler config auth-fn] (with-security handler config auth-fn ""))
   ([handler config auth-fn uri-prefix]
      (fn [request]
        (let [required-roles (required-roles config request)
-             user (current-user request)
+             user (current-user)
              user-status (if (and (auth-required? required-roles)
                                   (nil? user))
                            (auth-fn request)
@@ -217,21 +226,20 @@
                (append-to-redirect-loc user-status uri-prefix)
                (allow-access? required-roles (:roles user-status))
                (binding [*sandbar-current-user* user-status]
-                 (-> (kit/with-handler
-                       (handler request)
-                       (kit/handle *access-error* [n]
-                                   (redirect-to-permission-denied uri-prefix))
-                       (kit/handle *authentication-error* [n]
-                                   (if *sandbar-current-user*
-                                     (redirect-to-authentication-error
-                                      uri-prefix)
-                                     (let [user-status (auth-fn request)]
-                                       (if (redirect? user-status)
-                                         (append-to-redirect-loc user-status
-                                                                 uri-prefix)
-                                         (do (set! *sandbar-current-user*
-                                                   user-status)
-                                             (handler request)))))))
-                     (add-current-user-to-response request)))
+                 (kit/with-handler
+                   (handler request)
+                   (kit/handle *access-error* [n]
+                               (redirect-to-permission-denied uri-prefix))
+                   (kit/handle *authentication-error* [n]
+                               (if *sandbar-current-user*
+                                 (redirect-to-authentication-error uri-prefix)
+                                 (let [user-status (auth-fn request)]
+                                   (if (redirect? user-status)
+                                     (append-to-redirect-loc user-status
+                                                             uri-prefix)
+                                     (do (session-put! :current-user
+                                                       user-status)
+                                         (set! *sandbar-current-user*
+                                               user-status)
+                                         (handler request))))))))
                :else (redirect-to-permission-denied uri-prefix))))))
-             

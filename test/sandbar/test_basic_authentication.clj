@@ -92,19 +92,16 @@
               (is (= ((with-security basic-auth)
                       {:uri "/test.css"})
                      "/test.css")))
-           (t "redirect to permission denied when valid user without role"
+           (binding [*sandbar-session* (atom {:current-user {:name "testuser"
+                                                             :roles #{:user}}})]
+             (t "redirect to permission denied when valid user without role"
               (is (= ((with-security basic-auth)
-                      {:uri "/admin/page"
-                       :session {:current-user {:name "testuser"
-                                                :roles #{:user}}}})
+                      {:uri "/admin/page"})
                      (redirect "/permission-denied"))))
-           (t "allow access when user is in correct role"
+             (t "allow access when user is in correct role"
               (is (= ((with-security basic-auth)
-                      {:uri "/some/page"
-                       :session {:current-user {:name "testuser"
-                                                :roles #{:user}}}})
-                     (res-200-and-user "/some/page" {:name "testuser"
-                                                     :roles #{:user}}))))))
+                      {:uri "/some/page"})
+                     "/some/page"))))))
       (t "and NO url config"
          (binding [app-context (atom "")]
            (t "redirect to permission denied when access exception is thrown"

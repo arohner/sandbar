@@ -19,8 +19,3 @@
       #(.endsWith (:uri %) ".js") :any
       #".*"                       [#{:admin :user} :nossl]])
 
-(defn res-200-and-user [page user]
-  {:status  200
-   :headers {"Content-Type" "text/html"}
-   :body    page
-   :session {:current-user user}})
