@@ -6,23 +6,23 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.test_database
+(ns sandbar.dev.test_database
   (:use [clojure.test]
-        [sandbar.database]))
+        [sandbar.dev.database]))
 
 (deftest test-map-values
   (is (= (map-values #(if (nil? %) 42 %) {:name "John" :age 27 :height nil}) 
          {:name "John" :age 27 :height 42})))
 
 ; test split-criteria
-(def split-criteria (ns-resolve 'sandbar.database
+(def split-criteria (ns-resolve 'sandbar.dev.database
                                 'split-criteria)) 	
 (deftest test-split-criteria
   (is (= (split-criteria {:id 1}) (list [:id] 1)))
   (is (= (split-criteria {:id 1 :name "John"}) (list [:id :name] 1 "John"))))
 
 ; test create-comparison
-(def create-comparison (ns-resolve 'sandbar.database
+(def create-comparison (ns-resolve 'sandbar.dev.database
                                    'create-comparison))
 (deftest test-create-comparison
   (is (= (create-comparison :id 1) "id = ?"))
@@ -31,7 +31,7 @@
   (is (= (create-comparison :name "Joh*") "name like ?")))
 
 ; test create-where-str
-(def create-where-str (ns-resolve 'sandbar.database
+(def create-where-str (ns-resolve 'sandbar.dev.database
                                   'create-where-str))
 (deftest test-create-where-str
   (is (= (create-where-str [:id] [1]) "id = ?"))
@@ -40,7 +40,7 @@
          "id = ? and name = ? and desc like ? and cost IS NULL")))
 	
 ; test replace-wildcard
-(def replace-wildcard (ns-resolve 'sandbar.database
+(def replace-wildcard (ns-resolve 'sandbar.dev.database
                                   'replace-wildcard))
 (deftest test-replace-wildcard
   (is (= (replace-wildcard "Something*") "Something%")))

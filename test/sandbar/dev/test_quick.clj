@@ -6,11 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.test_quick
+(ns sandbar.dev.test_quick
   (:use (clojure test)
         (hiccup core)
-        (sandbar quick
-                 [test :only (t)])))
+        (sandbar.dev quick
+                     [test :only (t)])))
 
 (deftest test-conj-or-concat
   (is (= (conj-or-concat [:a] "ab")

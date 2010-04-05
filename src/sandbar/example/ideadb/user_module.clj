@@ -10,11 +10,12 @@
   (:use (hiccup core)
         (compojure core)
         (ring.util [response :only (redirect)])
-        (sandbar library
+        (sandbar core
                  [auth :only (current-username
                               current-user-roles
                               any-role-granted?)]
                  stateful-session)
+        (sandbar.dev library)
         (sandbar.example.ideadb
          [layouts :only (main-layout list-layout form-layout)]
          [model])))

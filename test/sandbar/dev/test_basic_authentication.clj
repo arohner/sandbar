@@ -6,15 +6,16 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.test_basic_authentication
+(ns sandbar.dev.test_basic_authentication
   (:use [clojure.test]
         (ring.util [response :only (redirect)])
-        (sandbar stateful-session
-                 library
+        (sandbar core
+                 stateful-session
                  auth
-                 basic_authentication
-                 test-fixtures
-                 [test :only (t)])))
+                 test-fixtures)
+        (sandbar.dev library
+                     basic_authentication
+                     [test :only (t)])))
 
 (defn test-login-load-fn
   ([k] (test-login-load-fn k {} {}))

@@ -6,7 +6,7 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.database
+(ns sandbar.dev.database
   (:use (clojure.contrib [sql :as sql]
 	                 [java-utils :only (as-str)]
 	                 [str-utils :only (re-gsub)])))

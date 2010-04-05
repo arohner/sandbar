@@ -6,9 +6,10 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.user_tables_mysql
-  (:use (sandbar library auth)
-        [sandbar.database :as database]))
+(ns sandbar.dev.user_tables_mysql
+  (:use (sandbar auth)
+        (sandbar.dev library
+                     [database :as database])))
 
 ;; Create user tables in mysql. To create these tables, load this file
 ;; and then run (create-tables).

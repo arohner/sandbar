@@ -6,11 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.library
+(ns sandbar.dev.library
   (:use (hiccup core page-helpers form-helpers)
         (ring.util [response :only (redirect)]
                    [codec :only (url-encode)])
-        (sandbar stateful-session)
+        (sandbar core stateful-session)
         (clojure.contrib [str-utils :only (re-split re-partition)]
                          [str-utils2 :only (capitalize)])))
 
@@ -76,16 +76,6 @@
   (k p (name k)))
 
 ;;
-;; State
-;; =====
-;;
-
-(def app-context (atom ""))
-
-(defn set-app-context! [context]
-  (swap! app-context (fn [a b] b) context))
-
-;;
 ;; HTML
 ;; ====
 ;;
@@ -94,17 +84,6 @@
 (def css-path "/css/")
 (def image-path "/images/")
 (def js-path "/js/")
-
-(defn cpath [path]
-  (if (.startsWith path "/")
-    (str @app-context path)
-    path))
-
-(defn remove-cpath [path]
-  (let [c @app-context]
-    (if (not (empty? c))
-      (apply str (drop (count c) path))
-      path)))
 
 (defn clink-to [path title]
   (link-to (cpath path) title))
@@ -134,25 +113,6 @@
     (link-to (str (cpath path)) (image name attrs)))
   ([path name mouseover attrs]
      (link-to (str (cpath path)) (image name mouseover attrs))))
-
-(defn redirect-301 [url]
-  {:status 301
-   :headers {"Location" (cpath url)}})
-
-(defn redirect? [m]
-  (or (= (:status m) 302)
-      (= (:status m) 301)))
-
-(defn append-to-redirect-loc
-  "Append the uri-prefix to the value of Location in the headers of the
-   redirect map."
-  [m uri-prefix]
-  (if (or (nil? uri-prefix) (empty? uri-prefix))
-    m
-    (let [loc (remove-cpath ((:headers m) "Location"))]
-      (if (re-matches #".*://.*" loc)
-        m
-        (merge m {:headers {"Location" (cpath (str uri-prefix loc))}})))))
 
 ;;
 ;; Validation

@@ -8,8 +8,8 @@
 
 (ns sandbar.test_stateful_session
   (:use (clojure test)
-        (sandbar stateful-session
-                 [test :only (t)])))
+        (sandbar stateful-session)
+        (sandbar.dev [test :only (t)])))
 
 (deftest test-session-put!
   (t "put in session"

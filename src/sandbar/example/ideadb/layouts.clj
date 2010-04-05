@@ -9,11 +9,11 @@
 (ns sandbar.example.ideadb.layouts
   (:require [clojure.contrib.str-utils2 :as s])
   (:use (hiccup core page-helpers)
-        [sandbar.library]
         (sandbar [auth :only (current-user
                               current-username
                               any-role-granted?)]
                  stateful-session)
+        [sandbar.dev.library]
         [sandbar.example.ideadb.model]))
 
 (defn base-layout [title header request & body]

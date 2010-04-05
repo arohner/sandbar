@@ -6,9 +6,9 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.test_util
+(ns sandbar.dev.test_util
   (:use [clojure.test]
-        [sandbar.util]))
+        [sandbar.dev.util]))
  
 (deftest test-remove-file-ext
   (is (= (remove-file-ext "test.txt") "test"))

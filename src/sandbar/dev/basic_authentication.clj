@@ -6,10 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.basic_authentication
+(ns sandbar.dev.basic_authentication
   (:use (compojure core)
         (ring.util [response :only (redirect)])
-        (sandbar auth library stateful-session)))
+        (sandbar core auth stateful-session)
+        (sandbar.dev library)))
 
 (defn basic-auth [request]
   (do (session-put! :auth-redirect-uri

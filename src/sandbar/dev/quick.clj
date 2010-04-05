@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.quick
+(ns sandbar.dev.quick
   "Quick is English for Wiki."
   (:require [clojure.contrib.str-utils2 :as s]))
 

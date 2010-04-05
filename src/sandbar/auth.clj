@@ -10,10 +10,10 @@
   (:use (ring.util [response :only (redirect)])
         (clojure [set :only (intersection)])
         (clojure.contrib [error-kit :as kit])
-        (sandbar [library :only (remove-cpath
-                                 redirect?
-                                 redirect-301
-                                 append-to-redirect-loc)]
+        (sandbar [core :only (remove-cpath
+                              redirect?
+                              redirect-301
+                              append-to-redirect-loc)]
                  stateful-session)))
 
 (def *hash-delay* 1000)
@@ -176,17 +176,6 @@
                          (current-username)
                          " is not in one of "
                          ~roles)))))
-
-#_(defmacro ensure-any-role-if [& clauses]
-  (let [pred# (first clauses)
-        roles# (second clauses)
-        body# (last clauses)
-        next# (if (> (count (drop 2 clauses)) 2)
-                (cons 'ensure-any-role-if (drop 2 clauses))
-                `(do ~body#))]
-     `(if ~pred#
-        (ensure-any-role ~roles# ~body#)
-        ~next#)))
 
 (defmacro ensure-any-role-if [& clauses]
   (if (odd? (count clauses))

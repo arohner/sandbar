@@ -6,22 +6,22 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.util
+(ns sandbar.dev.util
   (:use [clojure.contrib.str-utils :only (re-split re-gsub)])
   (:import (java.io File)))
  
 (defn remove-file-ext [file-name]
   (let [index (.lastIndexOf file-name ".")]
     (if (> index -1)
-        (apply str (first (split-at index file-name)))
-        file-name)))
+      (apply str (first (split-at index file-name)))
+      file-name)))
  
 (defn file-to-ns-string [f root-dir]
   (let [f-sep File/separator
-test-dir-pattern (re-pattern (str f-sep root-dir f-sep))]
+        test-dir-pattern (re-pattern (str f-sep root-dir f-sep))]
     (re-gsub (re-pattern f-sep) "."
-(remove-file-ext
-(last (re-split test-dir-pattern (.getAbsolutePath f)))))))
+             (remove-file-ext
+              (last (re-split test-dir-pattern (.getAbsolutePath f)))))))
  
 (defn file-seq-map-filter [dir mf ff]
   (filter ff (map mf (file-seq (File. dir)))))

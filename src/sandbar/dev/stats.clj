@@ -6,7 +6,7 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.stats
+(ns sandbar.dev.stats
   (:use [clojure.contrib.duck-streams :only (reader)])
   (:import java.io.File))
 

@@ -10,7 +10,8 @@
   (:use (hiccup core)
         (compojure core)
         (ring.util [response :only (redirect)])
-        (sandbar library auth basic_authentication userui)
+        (sandbar core auth)
+        (sandbar.dev library basic_authentication userui)
         (sandbar.example.ideadb
          [layouts :only (main-layout form-layout admin-users-layout)]
          [model]

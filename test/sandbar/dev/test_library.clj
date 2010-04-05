@@ -6,40 +6,14 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.test_library
+(ns sandbar.dev.test_library
   (:use (clojure test)
-        (sandbar library
-                 stateful-session
-                 [test :only (t)])))
+        (sandbar core stateful-session)
+        (sandbar.dev library
+                     [test :only (t)])))
 
 (defn test-request [params]
   {:params params})
-
-(deftest test-append-to-redirect-loc
-  (t "append to redirect location"
-     (binding [app-context (atom "")]
-       (t "when append is blank"
-          (is (= (append-to-redirect-loc (redirect-301 "/p") "")
-                 (redirect-301 "/p"))))
-       (t "when append is nil"
-          (is (= (append-to-redirect-loc (redirect-301 "/p") nil)
-                 (redirect-301 "/p"))))
-       (t "when there is something to append"
-          (is (= (append-to-redirect-loc (redirect-301 "/p") "/t")
-                 (redirect-301 "/t/p"))))
-       (t "does nothing when loc is a complete URL with http scheme"
-          (is (= (append-to-redirect-loc (redirect-301 "http://x/p") "/t")
-                 (redirect-301 "http://x/p"))))
-       (t "does nothing when loc is a complete URL with https scheme"
-          (is (= (append-to-redirect-loc (redirect-301 "https://x/p") "/t")
-                 (redirect-301 "https://x/p")))))
-     (binding [app-context (atom "/context")]
-       (t "when append is blank and there is a context"
-          (is (= (append-to-redirect-loc (redirect-301 "/p") "")
-                 (redirect-301 "/p"))))
-       (t "when there is something to append and there is a context"
-          (is (= (append-to-redirect-loc (redirect-301 "/p") "/t")
-                 (redirect-301 "/t/p")))))))
 
 (deftest test-merge-table-state-vecs
   (t "merge table sort state"

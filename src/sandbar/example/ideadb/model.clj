@@ -7,12 +7,11 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.example.ideadb.model
-  (:use (sandbar [auth :only (current-user
-                              ensure-any-role-if
-                              ensure-any-role
-                              ensure-authenticated)]
-                 [database :only (find-in delete-record save-or-update)])
-        [clojure.contrib.str-utils :only (re-split re-partition)]))
+  (:use [clojure.contrib.str-utils :only (re-split re-partition)]
+        (sandbar [auth :only (current-user
+                              ensure-any-role-if)])
+        (sandbar.dev 
+         [database :only (find-in delete-record save-or-update)])))
 
 (def db (atom nil))
 

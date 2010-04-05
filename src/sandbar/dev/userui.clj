@@ -6,12 +6,13 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.userui
-  (:use (sandbar library
+(ns sandbar.dev.userui
+  (:use (ring.util [response :only (redirect)])
+        (compojure core)
+        (sandbar core
                  stateful-session
                  [auth :only (hash-password)])
-        (ring.util [response :only (redirect)])
-        (compojure core)))
+        (sandbar.dev library)))
 
 (defn secure-user
   "Ensure that the user has a salt value associated with it and that if the

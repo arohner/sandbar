@@ -10,8 +10,8 @@
   (:use [clojure.test]
         (clojure.contrib [error-kit :as kit])
         (ring.util [response :only (redirect)])
-        (sandbar library auth stateful-session test-fixtures)
-        [sandbar.test :only (t)]))
+        (sandbar core auth stateful-session test-fixtures)
+        [sandbar.dev.test :only (t)]))
 
 ;;
 ;; Helpers

@@ -6,10 +6,10 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.test
+(ns sandbar.dev.test
   (:use [clojure.test]
         [clojure.test :only (run-tests)]
-        [sandbar.util]))
+        [sandbar.dev.util]))
  
 (def test-dir "test")
 (def test-file-prefix "test_")

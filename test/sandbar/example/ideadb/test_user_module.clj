@@ -9,8 +9,9 @@
 (ns sandbar.example.ideadb.test_user_module
   (:use [clojure.test]
         [sandbar.example.ideadb.user_module]
-        (sandbar library auth)
-        [sandbar.test :only (t)]))
+        (sandbar auth)
+        (sandbar.dev library
+                     [test :only (t)])))
 
 (defn test-request [params]
   {:session {:id "x"} :params params})
