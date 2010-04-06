@@ -76,24 +76,39 @@
      (t "input contains values, return session nil removes values"
         (is (= ((wrap-stateful-session* (fn [r] {:session nil}))
                 {:session {:a "a"}})
-               {})))
-     (t "input contains values, session-delete-key! does not remove them"
+               {:session nil})))
+     (t "input contains values, return session nil removes only func values"
+        (is (= ((wrap-stateful-session* (fn [r] {:session nil}))
+                {:session {:a "a" :sandbar-session {:a "a"}}})
+               {:session {:sandbar-session {:a "a"}}})))
+     (t "session-delete-key! does not remove values from functional session"
         (is (= ((wrap-stateful-session*
                  (fn [r] (do (session-delete-key! :a)
                              {})))
                 {:session {:a "a"}})
                {:session {:a "a"}})))
-     (t "input contains values, use session-delete-key! to remove them"
+     (t "session-delete-key! does remove values from sandbar-session"
         (is (= ((wrap-stateful-session*
                  (fn [r] (do (session-delete-key! :a)
                              {})))
                 {:session {:sandbar-session {:a "a"} :a "a"}})
                {:session {:a "a"}})))
+     (t "session-delete-key! causes session to be deleted when it is empty"
+        (is (= ((wrap-stateful-session*
+                 (fn [r] (do (session-delete-key! :a)
+                             {})))
+                {:session {:sandbar-session {:a "a"}}})
+               {:session nil})))
      (t "response values DO NOT override existing session values"
         (is (= ((wrap-stateful-session*
                  (fn [r] (do (session-put! :a "b")
                              {:session {:a "c"}})))
                 {:session {:a "a"}})
-               {:session {:sandbar-session {:a "b"} :a "c"}})))))
+               {:session {:sandbar-session {:a "b"} :a "c"}})))
+     (t "no session in request or response or sandbar-session"
+        (is (= ((wrap-stateful-session*
+                 (fn [r] {}))
+                {})
+               {})))))
 
 

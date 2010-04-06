@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.example.stateful-sessions
+(ns sandbar.example.session-demo
   "Illustrating the difference between functional and statful session
    manipulation. Also showing that they can be used simultaniously
    buy do not interfere with one another."

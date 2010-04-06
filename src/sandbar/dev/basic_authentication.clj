@@ -12,6 +12,10 @@
         (sandbar core auth stateful-session)
         (sandbar.dev library)))
 
+;; This namespace should only depend on the fact that there is a
+;; username and password. Extract all of the specific user stuff into
+;; a protocol.
+
 (defn basic-auth [request]
   (do (session-put! :auth-redirect-uri
                     (:uri request))
@@ -64,7 +68,8 @@
 
 (defn authenticate! [load-fn props params]
   (let [user-data (create-login-from-params load-fn params)
-        success (session-get :auth-redirect-uri)
+        success (or (session-get :auth-redirect-uri)
+                    (property-lookup props :login-page))
         failure "login"]
     (redirect
      (cond (invalid-login?! props user-data) failure
@@ -76,26 +81,22 @@
                    (session-delete-key! :auth-redirect-uri)
                    success)))))
 
-(defn logout! [props]
-  (let [logout-page (if-let [p (:logout-page props)]
-                      (cpath p)
-                      (cpath "/"))]
-    (redirect
-     (do (session-delete-key! :current-user)
-         logout-page))))
 
 ;;
 ;; Routes
 ;; ======
 ;;
 
-(defn security-login-routes [path-prefix layout name-fn props data-fns]
-  (routes
-   (GET (str path-prefix "/login*") request
-        (layout (name-fn request)
-                request
-                (login-page props request)))
-   (POST (str path-prefix "/login*") {params :params}
-         (authenticate! (data-fns :load) props params))
-   (GET (str path-prefix "/logout*") []
-        (logout! props))))
+(defn auth-login-routes
+  ([layout name-fn props load-fn]
+     (auth-login-routes "" layout name-fn props load-fn))
+  ([path-prefix layout name-fn props load-fn]
+     (routes
+      (GET (str path-prefix "/login*") request
+           (layout (name-fn request)
+                   request
+                   (login-page props request)))
+      (POST (str path-prefix "/login*") {params :params}
+            (authenticate! load-fn props params))
+      (GET (str path-prefix "/logout*") []
+           (logout! props)))))

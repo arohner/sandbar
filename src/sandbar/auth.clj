@@ -10,7 +10,8 @@
   (:use (ring.util [response :only (redirect)])
         (clojure [set :only (intersection)])
         (clojure.contrib [error-kit :as kit])
-        (sandbar [core :only (remove-cpath
+        (sandbar [core :only (cpath
+                              remove-cpath
                               redirect?
                               redirect-301
                               append-to-redirect-loc)]
@@ -187,6 +188,14 @@
     (throw (IllegalArgumentException.
             "ensure-any-role-if must have an odd number of forms"))))
 
+(defn logout! [props]
+  (let [logout-page (if-let [p (:logout-page props)]
+                      (cpath p)
+                      (cpath "/"))]
+    (redirect
+     (do (session-delete-key! :current-user)
+         logout-page))))
+
 (defn with-secure-channel
   "Middleware function to redirect to either a secure or insecure channel."
   [handler config port ssl-port]
@@ -202,6 +211,7 @@
 
 (defn with-security
   "Middleware function for authentication and authorization."
+  ([handler auth-fn] (with-security handler [] auth-fn ""))
   ([handler config auth-fn] (with-security handler config auth-fn ""))
   ([handler config auth-fn uri-prefix]
      (fn [request]
