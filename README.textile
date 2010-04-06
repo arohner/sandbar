@@ -1,9 +1,10 @@
 h1. Sandbar
 
-Sandbar is a library for web applications which is designed to be used with "Compojure":http://github.com/weavejester/compojure and/or "Ring":http://github.com/mmcgrana/ring. It is a work in progress. The following features will be implemented in order. 
+Sandbar is a library for web applications which is designed to be used with "Compojure":http://github.com/weavejester/compojure and/or "Ring":http://github.com/mmcgrana/ring. It is a work in progress. The following features will be implemented in order.
 
-* Form layout, validation and error reporting
+* Stateful session management
 * Authorization and authentication
+* Form layout, validation and error reporting
 * Tables which may be filtered, sorted and paged
 * User management
 * CSS builder
@@ -24,9 +25,10 @@ To run the reference application, follow these steps:
 * Configure MySQL
 
 <pre>
-<code> 
-CREATE DATABASE idea_db;
-GRANT ALL PRIVILEGES ON idea_db.* TO idea_user@localhost IDENTIFIED BY '123456789';
+<code>
+$ mysql -u root -p 
+$ CREATE DATABASE idea_db;
+$ GRANT ALL PRIVILEGES ON idea_db.* TO idea_user@localhost IDENTIFIED BY '123456789';
 </code>
 </pre>
 
@@ -34,12 +36,14 @@ GRANT ALL PRIVILEGES ON idea_db.* TO idea_user@localhost IDENTIFIED BY '12345678
 
 <pre>
 <code> 
-git clone git://github.com/brentonashworth/sandbar.git
-cd sandbar
-lein deps
-lein test
-lein repl
-(load-file "src/testdrive.clj")
+$ git clone git://github.com/brentonashworth/sandbar.git
+$ cd sandbar
+$ git branch --track stable origin/stable
+$ git checkout stable
+$ lein deps
+$ lein test
+$ lein repl
+$ (load-file "src/testdrive.clj")
 </code>
 </pre>
 
@@ -155,28 +159,32 @@ This will ensure that the <code>*current-user*</code> is authenticated, raising 
 
 h4. TODO
 
-* Upgrade to Compojure 0.4.0.
-* Use Compojure's security functions which are now in Ring cookie.clj.
-* How about some error handling code?
+* How about some error handling and reporting?
 * Should be able to configure a default login redirect page. For when a user logs in but there is no redirect page in the session
 * Create a new version of app.clj that does not have URI based authentication but instead secures data in the model.
 * Make it easy to create a login form that may be embedded within a page. After login the user would be forwarded to the default "welcome" page described above.
 
 h2. Road map
 
+The initial release of sandbar will be version 0.2.0 and will include <code>sandbar.auth</code> and <code>sandbar.stateful_session</code>. Everything else is being developed and has been moved into <code>sandbar.dev</code>. I hope to have 0.2.0 pushed to Clojars and ready for use by the end of April 2010.
+
 For now, I would like to keep everything in one project to ease implementation, but in the future I may break each piece out into a separate project.
 
 h3. The reference application
 
-The reference application is currently easiest to get running with MySQL. I plan to change this to use Derby by default so that it will be easier for others to test drive and evaluate.
-
-h3. Tables which may be filtered, sorted and paged
-
-The reference project has some working examples. Each of the tables in the application may be filtered and sorted on multiple columns. More features will be added in the future and the code will be improved over time.
+The reference application is currently easiest to get running with MySQL. I plan to change this to use mstate:http://github.com/brentonashworth/mstate by default so that it will be easier for others to test drive and evaluate.
 
 h3. Form layout, validation and error reporting
 
 Working on making it easy to layout and build forms without having to write HTML. There are examples of this in all of the forms in the reference application. The current code needs a lot of work.
+
+h3. Basic authentication support
+
+Add support for basic authentication. There is an example of this in the development area of the project and working in the reference application.
+
+h3. Tables which may be filtered, sorted and paged
+
+The reference project has some working examples. Each of the tables in the application may be filtered and sorted on multiple columns. More features will be added in the future and the code will be improved over time.
 
 h3. User management
 

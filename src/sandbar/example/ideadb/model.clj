@@ -50,8 +50,7 @@
   ([type]
      (filter-and-sort-records type {} {}))
   ([type filters sort-and-page]
-     (ensure-any-role-if (= type :idea) #{:user :admin}
-        (find-in @db type filters sort-and-page))))
+     (find-in @db type filters sort-and-page)))
 
 (defn find-by-id [type id]
   (first (find-in @db type {:id id})))

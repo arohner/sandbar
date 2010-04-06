@@ -45,8 +45,14 @@
   (is (nil? (role-set :any-channel))))
 
 (deftest test-find-matching-config
-  (t "test not implemented"
-     (is (true? false))))
+  (t "find mathing config"
+     (let [config [[#"/a.*" :a] [#"/b.*" :b]]]
+       (is (find-matching-config config 
+                                 {:uri "/a/page"})
+           :a)
+       (is (find-matching-config config
+                                 {:uri "/b/page"})
+           :b))))
 
 (deftest test-required-roles
   (t "get required roles"
@@ -127,12 +133,19 @@
             true))))
 
 (deftest test-filter-channel-config
-  (t "test not implemented"
-     (is (true? false))))
+  (t "filter channel config"
+     (let [config [#"/a.*" :role
+                   #"/b.*" :ssl]]
+       (is (= (last (first (filter-channel-config config)))
+              :ssl)))))
 
 (deftest test-hash-password
-  (is "test not implemented"
-      (true? false)))
+  (is "test hash password"
+      (let [password "test"
+            salt "uyhtre"
+            h (hash-password salt password)]
+        (is (not (= h password)))
+        (is (= h (hash-password salt password))))))
 
 (deftest test-any-role-granted?
   (t "are any of these roles granted"
