@@ -1,4 +1,4 @@
-(defproject sandbar/sandbar "0.2.1"
+(defproject sandbar/sandbar "0.2.2"
   :description "Clojure web application library built on top of Ring
                 and Compojure."
   :dependencies [[org.clojure/clojure "1.2.0-master-SNAPSHOT"]
@@ -14,7 +14,7 @@
                      [mstate "0.0.1-SNAPSHOT"]]
   :namespaces [sandbar.core
                sandbar.auth
-               sandbar.statful_session
+               sandbar.stateful_session
                sandbar.dev.basic_authentication
                sandbar.dev.database
                sandbar.dev.library
