@@ -1,0 +1,22 @@
+h2. Sandbar Documentation
+
+Sandbar is a library for web applications that is meant to be used with Ring and Compojure.
+
+It is a component oriented library with the goal of allowing developers to get significant amounts of work done with the fewest lines of code. It aims to do this without telling you how to work. It is not a framework. Because of this, you may easily use only the parts of Sandbar that you need.
+
+The first release of this library is version 0.2.* which includes code to help with managing stateful sessions and authentication and authorization. I will add documentation to this wiki for all of the completed features.
+
+h3. Note about version numbers
+
+I plan to use <a href="http://semver.org/">Semantic Versioning</a> but this will only apply to non-development code. If you are using anything that has a namespace that begins with <code>sandbar.dev</code> then be warned, this can change in any way at any time. 
+
+There will always be at least three branches of the project: stable, master and dev. Stable will contain the current released version that has been pushed to Clojars. Master will contain newer versions with features that should are completed and should work but are not considered to be stable or ready for release. Dev is where I do my daily work.
+
+h3. The sandar.dev namespaces
+
+All the code in a namespace that begins with sandbar.dev is very pre-alpha. I will be using this code in my own projects and you may use it as well but be warned, it will change significantly with every release.
+
+h2. Current features
+
+[[Stateful Sessions]]
+[[Authentication and Authorization]]

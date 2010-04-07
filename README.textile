@@ -5,15 +5,37 @@ Sandbar is a library for web applications which is designed to be used with "Com
 * Stateful session management
 * Authorization and authentication
 * Form layout, validation and error reporting
+* Basic (form based) authentication
 * Tables which may be filtered, sorted and paged
 * User management
 * CSS builder
-* Some kind of interface to Lucene (Solr)
-* A Ring session storage engine backed by FleetDB, Memcached or mstate???
 
 The name "sandbar" is a surfing reference. A sandbar creates waves which may be surfed. Sandbar creates web sites which may be surfed. Sandbars are always in a state of change. So is this project.
 
 The project contains the library code as well as a reference application which uses it. There are also small demo applications which show how to use each feature.
+
+h2. Features
+
+As of version 0.2.* there are two completed features:
+
+* Stateful sessions
+* Authorization and authentication
+
+Documentation for completed features is located in the <a href="http://wiki.github.com/brentonashworth/sandbar/">Sandbar Wiki</a>.
+
+By completed, I mean that they have taken the final form that they will have in version 1.0.0. There is still much work to be done to test them and to make them more robust.
+
+h2. Using sandbar in your project
+
+If you would like to use Sandbar in your project then you may use the currently available 0.2.1 realease that is on Clojars.
+
+To include Sandbar in your Leiningen project, add the following to your <code>:dependencies</code>
+
+<pre>
+<code>
+[sandbar/sandbar "0.2.1"]
+</code>
+</pre>
 
 h2. Running the reference application
 
@@ -59,50 +81,6 @@ password: password
 
 Log in with one of these accounts and take it for a spin. The next step would be to take a look at the code and tinker with it in your development environment of choice. Start with <code>sandbar.example.ideadb.app</code>.
 
-h2. Features
-
-As of version 0.2.0 there are two completed features:
-
-* Stateful Sessions
-* Authorization and Authentication
-
-The documentation for completed features is located in the <a href="http://wiki.github.com/brentonashworth/sandbar/">Sandbar Wiki</a>.
-
-By completed, I mean that they have taken the final form that they will have in version 1.0.0. There is still much work to be done to test them and to make them more robust.
-
-h2. Road map
-
-The initial release of sandbar will be version 0.2.0 and will include <code>sandbar.auth</code> and <code>sandbar.stateful_session</code>. Everything else is being developed and has been moved into <code>sandbar.dev</code>. I hope to have 0.2.0 pushed to Clojars and ready for use by the end of April 2010.
-
-For now, I would like to keep everything in one project to ease implementation, but in the future I may break each piece out into a separate project.
-
-h3. The reference application
-
-The reference application is currently easiest to get running with MySQL. I plan to change this to use mstate:http://github.com/brentonashworth/mstate by default so that it will be easier for others to test drive and evaluate.
-
-h3. Form layout, validation and error reporting
-
-Working on making it easy to layout and build forms without having to write HTML. There are examples of this in all of the forms in the reference application. The current code needs a lot of work.
-
-h3. Basic authentication support
-
-Add support for basic authentication. There is an example of this in the development area of the project and working in the reference application.
-
-h3. Tables which may be filtered, sorted and paged
-
-The reference project has some working examples. Each of the tables in the application may be filtered and sorted on multiple columns. More features will be added in the future and the code will be improved over time.
-
-h3. User management
-
-Every application that I create needs some kind of user management GUI. The goal here is to package this up into a library that I can include and configure and never have to worry about again. This is partially implemented.
-
-h3. CSS Builder
-
-Working with CSS on a large project always gets out of control. I want to be able to write my CSS as Clojure code like "hiccup":http://github.com/weavejester/hiccup does for html. This currently does not exist.
-
-h3. A Ring session storage engine
-
-Create a session store for Ring that will save session data in a remote FleetDB server, Memcached or mstate. I can put this off until later and just use the memory-store provided with Ring. If I put it off, maybe someone else will do it first.
 
 h2. License
 

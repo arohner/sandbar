@@ -1,0 +1,99 @@
+The code for authentication and authorization is located in the namespace <code>sandbar.auth</code>. For an example of how it may be used, see <code>sandbar.example.auth-demo</code> and <code>sandbar.example.ideadb.app</code>.
+
+h4. Configuration
+
+An example security configuration is shown below:
+
+<pre>
+<code>
+(def security-config
+     [#"/admin.*"                   [:admin :ssl] 
+      #"/idea/edit.*"               [:admin :ssl] 
+      #"/idea/delete.*"             [:admin :ssl] 
+      #"/idea/download.*"           :admin 
+      #"/permission-denied.*"       :any
+      #"/login.*"                   [:any :ssl] 
+      #".*.css|.*.js|.*.png|.*.gif" [:any :any-channel] 
+      #".*"                         [#{:admin :user} :nossl]])	
+</code>
+</pre>
+
+This is configuring two things at once: authorization and channel security. You could do just one or the other if that is all you need. A vector is used for the configuration because the order in which items are entered is important. The vector contains pairs of entries. Each entry has a regular expression literal and a requirement to be used if the regular expression matches the current URI. Each requirement may be a vector, a set or a keyword. If it is a vector then it must contain two elements, the first being the role and the second being the channel requirement. Roles can be expressed as either a keyword for the role or as a set of role keywords. Channel security requirements must be one of the keywords :ssl, :nossl or :any-channel. This sounds complex but I think it is simple to understand when looking at the above example.
+
+h4. Applying the configuration to your routes
+
+Once again from the reference application, here is an example of how to use this configuration.
+
+<pre>
+<code>
+(def app
+  (-> development-routes
+      with-db-configured
+      (with-security security-config basic-auth)
+      wrap-stateful-session
+      wrap-params
+      (wrap-file "public")
+      wrap-file-info
+      (with-secure-channel security-config 8080 8443)
+      wrap-stacktrace))
+</code>
+</pre>
+
+<code>with-security</code> and <code>with-secure-channel</code> are middleware functions that use the configuration above to control access to specific URIs and to ensure that the channel security rules are being enforced. Note that these can be used independently of each other.
+
+h4. Authentication function
+
+In the above example, the <code>basic-auth</code> authentication function comes from the namespace <code>sandbar.basic_authentication</code>. Authentication functions are functions of the request that return either a valid user or a redirect. This means that one may easily create one's own authentication function. A valid user is a map that contains at least two things: a :name key that maps to a user's username and a :roles key that maps to the set of roles that the user belongs to. The role keywords that are used in this set must match the role keywords that are used in your configuration.
+
+The <code>basic-auth</code> function here will redirect the user to a login form.
+
+The <code>sandbar.basic_authentication</code> namespace still needs some work in order to make it more flexible. Anyone should be able to use it in their project no matter where their data is stored or how it is organized.
+
+h4. Authorization
+
+The <code>sandbar.auth</code> namespace includes the functions:
+
+* current-user
+* current-username
+* current-user-roles
+* any-role-granted?
+
+The first three take no arguments. These functions must be used in code that is executed downstream of the <code>with-security</code> middleware. The var <code>*current-user*</code> is bound to the current user in <code>with-security</code>. Remember that <code>*current-user*</code> is only bound in the current thread so if you need to use more that one thread you will have to deref this value and pass it into your threaded code.
+
+<code>any-role-granted?</code> takes a list of roles as its arguments. This function must also be called downstream from <code>with-security</code> for the reasons mentioned above.
+
+These functions can be used to authorize access at the function level and should be used in your model to control access to sensitive data.
+
+h4. Authorization Errors
+
+You may use the functions above to determine if the current user is allowed to access data. When it is determined that a user is not authenticated or does not have the correct role, use <code>access-error</code> or <code>authorization-error</code> to raise an error. If an <code>access-error</code> is raised then the user will be redirected to the access denied page. If an <code>authorization-error</code> is raised, the authorization function will be called. If the authentication function returns a valid user then that user will be put in the session and the handler function will be called again.
+
+There are also two macros which make this even easier. They are <code>ensure-authenticated</code> and <code>ensure-any-role</code>. For example:
+ 
+<pre>
+<code>
+(ensure-authenticated
+  (order-members-only-jacket {:size "medium husky"}))
+</code>
+</pre>
+
+This will ensure that the <code>*current-user*</code> is authenticated, raising an authentication error if she is not and processing the order if she is.
+
+<pre>
+<code>
+(ensure-any-role #{:user :editor}
+  (set-text "something"))
+</code>
+</pre>
+
+<code>ensure-any-role</code> will first ensure that the <code>*current-user*</code> is authenticated. If not, it will raise an authentication error. It will then ensure that the <code>*current-user*</code> is in one of the roles, raising an access error if none are found.
+
+<pre>
+<code>
+(ensure-any-role-if (= table :private_stuff) #{:admin}
+                    (= table :user_data) #{:user}
+  (get-data-from table))
+</code>
+</pre>
+
+<code>ensure-any-role-if</code> takes an odd number of arguments. For each pair of predicate and role set it will check to see if the predicate is true. If it is true then it will use the associated set of roles to authorize the user delegating to the <code>ensure-any-role</code> function. If none of the predicates are true then the protected code will be executed without authentication or authorization.

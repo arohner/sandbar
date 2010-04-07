@@ -37,7 +37,6 @@
       :originator "Originator"
       :date_entered "Date (yyyy-mm-dd)"
       :category "Category"
-      :idea_type "Type"
       :business-unit "Business Unit"
       :status "Status"
       :empty ""

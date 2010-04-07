@@ -81,7 +81,6 @@
                    (session-delete-key! :auth-redirect-uri)
                    success)))))
 
-
 ;;
 ;; Routes
 ;; ======

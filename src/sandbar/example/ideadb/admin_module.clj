@@ -145,5 +145,5 @@
   (security-edit-user-routes "/admin" (var admin-users-layout) (fn [r] (:uri r))
                              properties user-data-functions)
   (auth-login-routes "" main-layout (fn [r] (:uri r))
-                     properties (:load user-data-functions)))
+                     properties (user-data-functions :load)))
 

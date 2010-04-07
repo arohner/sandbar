@@ -4,6 +4,7 @@
 # ignore output
 out/
 classes/
+*.jar
 
 # ignore libraries
 lib/
