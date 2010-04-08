@@ -19,3 +19,5 @@
       #(.endsWith (:uri %) ".js") :any
       #".*"                       [#{:admin :user} :nossl]])
 
+(defn test-request [params]
+  {:params params})

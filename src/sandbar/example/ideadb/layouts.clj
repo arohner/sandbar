@@ -13,7 +13,7 @@
                               current-username
                               any-role-granted?)]
                  stateful-session)
-        [sandbar.dev.library]
+        (sandbar.dev html)
         [sandbar.example.ideadb.model]))
 
 (defn base-layout [title header request & body]

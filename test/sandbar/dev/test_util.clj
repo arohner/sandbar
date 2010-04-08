@@ -6,7 +6,7 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.dev.test_util
+(ns sandbar.dev.test-util
   (:use [clojure.test]
         [sandbar.dev.util]))
  

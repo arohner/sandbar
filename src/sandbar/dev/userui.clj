@@ -12,7 +12,7 @@
         (sandbar core
                  stateful-session
                  [auth :only (hash-password)])
-        (sandbar.dev library)))
+        (sandbar.dev forms tables html util standard-pages)))
 
 (defn secure-user
   "Ensure that the user has a salt value associated with it and that if the

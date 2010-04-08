@@ -6,11 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.dev.basic_authentication
+(ns sandbar.dev.basic-authentication
   (:use (compojure core)
         (ring.util [response :only (redirect)])
         (sandbar core auth stateful-session)
-        (sandbar.dev library)))
+        (sandbar.dev forms util)))
 
 ;; This namespace should only depend on the fact that there is a
 ;; username and password. Extract all of the specific user stuff into
@@ -52,7 +52,8 @@
 
 (defn login-page [props request]
   (login-form
-   (:uri request) "Login"
+   (:uri request)
+   "Login"
    (form-layout-grid [1 1]
                      :login
                      [(form-textfield props :username {:size 25} :required)

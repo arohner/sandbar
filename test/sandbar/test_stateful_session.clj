@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.test_stateful_session
+(ns sandbar.test-stateful-session
   (:use (clojure test)
         (sandbar stateful-session)
         (sandbar.dev [test :only (t)])))

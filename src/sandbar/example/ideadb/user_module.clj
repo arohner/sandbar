@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.example.ideadb.user_module
+(ns sandbar.example.ideadb.user-module
   (:use (hiccup core)
         (compojure core)
         (ring.util [response :only (redirect)])
@@ -15,7 +15,7 @@
                               current-user-roles
                               any-role-granted?)]
                  stateful-session)
-        (sandbar.dev library)
+        (sandbar.dev tables forms html standard-pages util)
         (sandbar.example.ideadb
          [layouts :only (main-layout list-layout form-layout)]
          [model])))

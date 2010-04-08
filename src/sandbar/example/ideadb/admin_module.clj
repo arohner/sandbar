@@ -11,7 +11,8 @@
         (compojure core)
         (ring.util [response :only (redirect)])
         (sandbar core auth)
-        (sandbar.dev library basic_authentication userui)
+        (sandbar.dev tables forms html standard-pages util
+                     basic-authentication userui)
         (sandbar.example.ideadb
          [layouts :only (main-layout form-layout admin-users-layout)]
          [model]

@@ -10,7 +10,7 @@
   "Provide an easy way for developers to setup and run the reference
    application."
   (:require [sandbar.example.ideadb.config :as ideadb-config]
-            [sandbar.dev.user_tables_mysql :as user-config]
+            [sandbar.dev.user-tables-mysql :as user-config]
             [sandbar.dev.database :as database]))
 
 (def testdrive-db (user-config/get-connection))

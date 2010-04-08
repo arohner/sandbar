@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.dev.test_userui
+(ns sandbar.dev.test-userui
   (:use [clojure.test]
         (sandbar [auth :only (hash-password)])
         (sandbar.dev userui

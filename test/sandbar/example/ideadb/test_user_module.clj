@@ -6,11 +6,11 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.example.ideadb.test_user_module
+(ns sandbar.example.ideadb.test-user-module
   (:use [clojure.test]
-        [sandbar.example.ideadb.user_module]
+        [sandbar.example.ideadb.user-module]
         (sandbar auth)
-        (sandbar.dev library
+        (sandbar.dev util
                      [test :only (t)])))
 
 (defn test-request [params]

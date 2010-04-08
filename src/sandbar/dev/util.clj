@@ -9,7 +9,63 @@
 (ns sandbar.dev.util
   (:use [clojure.contrib.str-utils :only (re-split re-gsub)])
   (:import (java.io File)))
- 
+
+(defn path-to-seq [path]
+  (filter #(not (.equals % "")) (re-split #"/" path)))
+
+(defn to-keywords [coll]
+  (map #(keyword %) coll))
+
+(defn seq-to-path [coll]
+  (apply str (interleave (repeat "/") coll)))
+
+(defn without-ext [s]
+  (apply str (interpose "." (reverse (rest (reverse (re-split #"[.]" s)))))))
+
+(defn format-csv [coll-of-rows]
+  (let [data (map #(interpose "," %) coll-of-rows)]
+    (apply str
+           (map #(if (nil? %) "\"\""  (if (and (not (= % "\n"))
+                                               (not (= % ",")))
+                                        (str "\"" % "\"")
+                                        %))
+                           (reduce (fn [a b] (concat a b ["\n"])) [] data)))))
+
+(defn random-between [lo hi]
+  (let [r (java.util.Random.)
+        lo (if (char? lo) (int lo) lo)
+        hi (if (char? hi) (int hi) hi)
+        n (+ 1 (- hi lo))]
+    (+ lo (Math/abs (mod (. r nextInt) n)))))
+
+(defn random-string [lo hi]
+  (loop [length (random-between lo hi)
+         v []]
+    (if (> length 0)
+      (let [j (random-between 1 3)]
+        (recur (dec length)
+               (conj v
+                     (cond (= j 1) (char (random-between \a \z))
+                           (= j 2) (char (random-between \A \Z))
+                           (= j 3) (char (random-between \1 \9))))))
+      (apply str v))))
+
+(defn index-by [k coll]
+  (reduce (fn [a b]
+            (let [v (k b)]
+              (assoc a v b)))
+          {}
+          coll))
+
+(defn date-string
+  ([] (date-string (java.util.Date.)))
+  ([d]
+     (let [formatter (java.text.SimpleDateFormat. "yyyy-MM-dd")]
+       (.format formatter d))))
+
+(defn property-lookup [p k]
+  (k p (name k)))
+
 (defn remove-file-ext [file-name]
   (let [index (.lastIndexOf file-name ".")]
     (if (> index -1)

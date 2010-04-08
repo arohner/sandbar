@@ -17,7 +17,11 @@
                sandbar.stateful_session
                sandbar.dev.basic_authentication
                sandbar.dev.database
-               sandbar.dev.library
+               sandbar.dev.forms
+               sandbar.dev.html
+               sandbar.dev.list_manager
+               sandbar.dev.standard_pages
+               sandbar.dev.tables
                sandbar.dev.stats
                sandbar.dev.userui
                sandbar.dev.util])

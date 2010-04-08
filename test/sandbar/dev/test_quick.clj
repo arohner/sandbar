@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.dev.test_quick
+(ns sandbar.dev.test-quick
   (:use (clojure test)
         (hiccup core)
         (sandbar.dev quick

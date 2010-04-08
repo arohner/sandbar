@@ -6,137 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.dev.test_library
+(ns sandbar.dev.test-forms
   (:use (clojure test)
         (sandbar core stateful-session)
-        (sandbar.dev library
+        (sandbar.dev forms util
                      [test :only (t)])))
-
-(defn test-request [params]
-  {:params params})
-
-(deftest test-merge-table-state-vecs
-  (t "merge table sort state"
-     (t "adding a new sort to empty list"
-        (is (= (merge-table-state-vecs [] [:b :asc])
-               [:b :asc])))
-     (t "adding a new sort"
-        (is (= (merge-table-state-vecs [:a :asc] [:b :asc])
-               [:a :asc :b :asc])))
-     (t "adding a new sort maintaining the correc order"
-        (is (= (merge-table-state-vecs [:b :asc] [:a :asc])
-               [:b :asc :a :asc])))
-     (t "updating the sort direction"
-        (is (= (merge-table-state-vecs [:b :asc :a :desc] [:b :desc])
-               [:b :desc :a :desc])))
-     (t "removing the last sort"
-        (is (= (merge-table-state-vecs [:b :asc :a :desc] [:a :remove])
-               [:b :asc])))
-     (t "removing the first sort"
-        (is (= (merge-table-state-vecs [:b :asc :a :desc] [:b :remove])
-               [:a :desc]))))
-  (t "merge table filter state"
-     (t "adding a new filter to empty list"
-        (is (= (merge-table-state-vecs [] [:b "a"])
-               [:b "a"])))
-     (t "adding a new filter"
-        (is (= (merge-table-state-vecs [:a "a"] [:b "b"])
-               [:a "a" :b "b"])))
-     (t "adding a new filter maintaining the correc order"
-        (is (= (merge-table-state-vecs [:b "b"] [:a "a"])
-               [:b "b" :a "a"])))
-     (t "updating a filter"
-        (is (= (merge-table-state-vecs [:b "b" :a "a"] [:b "c"])
-               [:b "c" :a "a"])))
-     (t "removing the last filter"
-        (is (= (merge-table-state-vecs [:b "b" :a "a"] [:a :remove])
-               [:b "b"])))
-     (t "removing the first filter"
-        (is (= (merge-table-state-vecs [:b "b" :a "a"] [:b :remove])
-               [:a "a"])))))
-
-(defn test-table-state [s]
-  {:table-state {:test-table s}})
-
-(deftest test-update-table-state!
-  (t "update table state sort state"
-     (t "when adding sort to initially empty state"
-        (binding [*sandbar-session* (atom {})]
-          (is (= (update-table-state! :test-table
-                                      {"sort-asc" "a"})
-                 {:sort [:a :asc] :filter []}))))
-     (t "when changing the direction of an existing sort"
-        (binding [*sandbar-session* (atom (test-table-state {:sort [:a :asc]}))]
-          (is (= (update-table-state! :test-table
-                                      {"sort-desc" "a"})
-                 {:sort [:a :desc] :filter []}))))
-     (t "when adding multiple sorts at the same time"
-        (binding [*sandbar-session* (atom (test-table-state {:sort [:a :asc]}))]
-          (is (= (update-table-state!
-                  :test-table
-                  {"sort-asc" "b" "sort-desc" "c"})
-                 {:sort [:a :asc :b :asc :c :desc] :filter []}))))
-     (t "when adding a new sort to an existing sort"
-        (binding [*sandbar-session* (atom (test-table-state {:sort [:b :asc]}))]
-          (is (= (update-table-state! :test-table
-                                      {"sort-desc" "a"})
-                 {:sort [:b :asc :a :desc] :filter []}))))
-     (t "when removing an existing sort"
-        (binding [*sandbar-session* (atom (test-table-state
-                                     {:sort [:b :asc :a :asc]}))]
-          (is (= (update-table-state! :test-table
-                                      {"remove-sort" "a"})
-                 {:sort [:b :asc] :filter []})))))
-  (t "update table filter state"
-     (t "when adding filter to initially empty state"
-        (binding [*sandbar-session* (atom {})]
-          (is (= (update-table-state!
-                  :test-table
-                  {"filter" "a" "filter-value" "v-a"})
-                 {:sort [] :filter [:a "v-a"]}))))
-     (t "when changing the value of a filter"
-        (binding [*sandbar-session* (atom (test-table-state {:filter [:a "v-a"]}))]
-          (is (= (update-table-state!
-                  :test-table
-                  {"filter" "a" "filter-value" "v-b"})
-                 {:sort [] :filter [:a "v-b"]}))))
-     (t "when adding a new filter to an existing filter"
-        (binding [*sandbar-session* (atom (test-table-state {:filter [:b "v-b"]}))]
-          (is (= (update-table-state!
-                  :test-table
-                  {"filter" "a" "filter-value" "v-a"})
-                 {:sort [] :filter [:b "v-b" :a "v-a"]}))))
-     (t "when removing an existing filter"
-        (binding [*sandbar-session* (atom (test-table-state
-                                     {:filter [:b "v-b" :a "v-a"]}))]
-          (is (= (update-table-state! :test-table
-                                      {"remove-filter" "a"})
-                 {:sort [] :filter [:b "v-b"]}))))))
-
-(deftest test-build-page-and-sort-map
-  (is (= (build-page-and-sort-map {:sort [:a :asc :b :desc]})
-         {:sort [:asc "a" :desc "b"]})))
-
-(deftest test-build-filter-map
-  (is (= (build-filter-map {:filter [:a "v-a" :b "v-b"]})
-         {:a "v-a" :b "v-b"})))
-
-(deftest test-current-page-and-sort!
-  (binding [*sandbar-session* (atom (test-table-state {:sort [:b :asc]}))]
-    (is (= (current-page-and-sort! :test-table {"sort-desc" "a"})
-           {:sort [:asc "b" :desc "a"]}))))
-
-(deftest test-create-table-sort-and-filter-controls
-  (binding [*sandbar-session* (atom (test-table-state {:sort [:a :asc]
-                                               :filter [:b "v-b"]}) )]
-    (is (= (create-table-sort-and-filter-controls
-            :test-table
-            {})
-           [:div {:class "filter-and-sort-controls"}
-            [:div "Remove sort: "
-             [:a {:href "?remove-sort=a"} :a]]
-            [:div "Remove filter: "
-             [:a {:href "?remove-filter=b"} :b " = " "v-b"]]]))))
 
 (deftest test-get-yes-no-fields
   (t "get yes/no fields"
@@ -207,93 +81,6 @@
                              {:a "2" :b "B"}])
                {"1" {:a "1" :b "A"}
                 "2" {:a "2" :b "B"}})))))
-
-(deftest test-table-cell
-  (t "create table cell"
-     (t "with just a value"
-        (is (= (table-cell "v")
-               [:td "v"])))
-     (t "with a value and attributes"
-        (is (= (table-cell {:attr {:class "c"} :value "v"})
-               [:td {:class "c"} "v"])))
-     (t "with a nil value"
-        (is (= (table-cell nil)
-               [:td])))
-     (t "with a filter"
-        (is (= (table-cell {:value "v"
-                            :actions #{:filter} :column :x})
-               [:td [:a {:href "?filter=x&filter-value=v"} "v"]])))
-     (t "with a filter and attributes"
-        (is (= (table-cell {:value "v" :attr {:class "c"}
-                            :actions #{:filter} :column :x})
-               [:td {:class "c"}
-                [:a {:href "?filter=x&filter-value=v"} "v"]])))
-     (t "with multiple values"
-        (is (= (table-cell "v1" "v2" "v3")
-               [:td "v1" "v2" "v3"])))
-     (t "with multiple values one of which is nil"
-        (is (= (table-cell "v1" nil "v3")
-               [:td "v1" "v3"])))))
-
-(def td-std-opts {:valign "top"})
-
-(deftest test-layout-table
-  (t "create a layout table"
-     (t "with one cell"
-        (is (= (layout-table [1] "A")
-               [:table [:tr [:td td-std-opts "A"]]])))
-     (t "with one cell on each row"
-        (is (= (layout-table [1 1] "A" "B")
-               [:table
-                [:tr [:td td-std-opts "A"]]
-                [:tr [:td td-std-opts "B"]]])))
-     (t "with two things going into one row"
-        (is (= (layout-table [1] ["A" "B"])
-               [:table
-                [:tr [:td td-std-opts "A" "B"]]])))
-     (t "with a vector of two things going into one cell"
-        (is (= (layout-table [1] [["A" "B"]])
-               [:table
-                [:tr [:td td-std-opts ["A" "B"]]]])))
-     (t "with two things going into one cell and then two things in two cells"
-        (is (= (layout-table [1 2] ["A" "B"] "C" "D")
-               [:table
-                [:tr [:td {:colspan 2 :valign "top"} "A" "B"]]
-                [:tr [:td td-std-opts "C"] [:td td-std-opts "D"]]])))
-     (t "with two cells in one row"
-        (is (= (layout-table [2] "A" "B")
-               [:table
-                [:tr [:td td-std-opts "A"] [:td td-std-opts "B"]]])))
-     (t "with two cells on each of two rows"
-        (is (= (layout-table [2 2] "A" "B" "C" "D")
-               [:table
-                [:tr [:td td-std-opts "A"] [:td td-std-opts "B"]]
-                [:tr [:td td-std-opts "C"] [:td td-std-opts "D"]]])))
-     (t "with two cells on the first row and one cell on the second"
-        (is (= (layout-table [2 1] "A" "B" "C")
-               [:table
-                [:tr [:td td-std-opts "A"] [:td td-std-opts "B"]]
-                [:tr [:td {:colspan 2 :valign "top"} "C"]]])))
-     (t "with one cell on the first row and two cells on the second"
-        (is (= (layout-table [1 2] "A" "B" "C")
-               [:table
-                [:tr [:td {:colspan 2 :valign "top"} "A"]]
-                [:tr [:td td-std-opts "B"] [:td td-std-opts "C"]]])))
-     (t "with a pyramid layout"
-        (is (= (layout-table [1 2 3 2 1] "A" "B" "C" "D" "E" "F" "G" "H" "I")
-               [:table
-                [:tr [:td {:colspan 3 :valign "top"} "A"]]
-                [:tr [:td td-std-opts "B"] [:td {:colspan 2 :valign "top"} "C"]]
-                [:tr
-                 [:td td-std-opts "D"]
-                 [:td td-std-opts "E"]
-                 [:td td-std-opts "F"]]
-                [:tr [:td td-std-opts "G"] [:td {:colspan 2 :valign "top"} "H"]]
-                [:tr [:td {:colspan 3 :valign "top"} "I"]]])))
-     (t "will a nil cell value"
-        (is (= (layout-table [] "A" nil)
-               [:table
-                [:tr [:td {:valign "top"} "A"]]])))))
 
 (defn test-form-opt-label [field-name]
   [:div {:class "field-label"} field-name ""])
@@ -579,3 +366,62 @@
                   (form-hidden-fixture "title" "")
                   (form-hidden-fixture "id" "")]))))))
 
+(def td-std-opts {:valign "top"})
+
+(deftest test-layout-table
+  (t "create a layout table"
+     (t "with one cell"
+        (is (= (layout-table [1] "A")
+               [:table [:tr [:td td-std-opts "A"]]])))
+     (t "with one cell on each row"
+        (is (= (layout-table [1 1] "A" "B")
+               [:table
+                [:tr [:td td-std-opts "A"]]
+                [:tr [:td td-std-opts "B"]]])))
+     (t "with two things going into one row"
+        (is (= (layout-table [1] ["A" "B"])
+               [:table
+                [:tr [:td td-std-opts "A" "B"]]])))
+     (t "with a vector of two things going into one cell"
+        (is (= (layout-table [1] [["A" "B"]])
+               [:table
+                [:tr [:td td-std-opts ["A" "B"]]]])))
+     (t "with two things going into one cell and then two things in two cells"
+        (is (= (layout-table [1 2] ["A" "B"] "C" "D")
+               [:table
+                [:tr [:td {:colspan 2 :valign "top"} "A" "B"]]
+                [:tr [:td td-std-opts "C"] [:td td-std-opts "D"]]])))
+     (t "with two cells in one row"
+        (is (= (layout-table [2] "A" "B")
+               [:table
+                [:tr [:td td-std-opts "A"] [:td td-std-opts "B"]]])))
+     (t "with two cells on each of two rows"
+        (is (= (layout-table [2 2] "A" "B" "C" "D")
+               [:table
+                [:tr [:td td-std-opts "A"] [:td td-std-opts "B"]]
+                [:tr [:td td-std-opts "C"] [:td td-std-opts "D"]]])))
+     (t "with two cells on the first row and one cell on the second"
+        (is (= (layout-table [2 1] "A" "B" "C")
+               [:table
+                [:tr [:td td-std-opts "A"] [:td td-std-opts "B"]]
+                [:tr [:td {:colspan 2 :valign "top"} "C"]]])))
+     (t "with one cell on the first row and two cells on the second"
+        (is (= (layout-table [1 2] "A" "B" "C")
+               [:table
+                [:tr [:td {:colspan 2 :valign "top"} "A"]]
+                [:tr [:td td-std-opts "B"] [:td td-std-opts "C"]]])))
+     (t "with a pyramid layout"
+        (is (= (layout-table [1 2 3 2 1] "A" "B" "C" "D" "E" "F" "G" "H" "I")
+               [:table
+                [:tr [:td {:colspan 3 :valign "top"} "A"]]
+                [:tr [:td td-std-opts "B"] [:td {:colspan 2 :valign "top"} "C"]]
+                [:tr
+                 [:td td-std-opts "D"]
+                 [:td td-std-opts "E"]
+                 [:td td-std-opts "F"]]
+                [:tr [:td td-std-opts "G"] [:td {:colspan 2 :valign "top"} "H"]]
+                [:tr [:td {:colspan 3 :valign "top"} "I"]]])))
+     (t "will a nil cell value"
+        (is (= (layout-table [] "A" nil)
+               [:table
+                [:tr [:td {:valign "top"} "A"]]])))))
