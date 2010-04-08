@@ -10,7 +10,7 @@
   (:use (compojure core)
         (ring.util [response :only (redirect)])
         (sandbar core auth stateful-session)
-        (sandbar.dev forms util)))
+        (sandbar.dev forms util validation)))
 
 ;; This namespace should only depend on the fact that there is a
 ;; username and password. Extract all of the specific user stuff into
@@ -37,6 +37,22 @@
                                  (load-fn :user_role
                                           {:user_id (:id user)} {}))))))))
 
+(defn login-page [props request]
+  (login-form
+   (:uri request)
+   "Login"
+   (form-layout-grid [1 1]
+                     :login
+                     [(form-textfield props :username {:size 25} :required)
+                      (form-password props :password {:size 25}  :required)]
+                     request
+                     {})))
+
+;;
+;; The old way
+;; ==========
+;;
+
 (def invalid-login?!
      (partial
       invalid?
@@ -50,22 +66,38 @@
                          (str (property-lookup props :password)
                               " is required."))))))
 
-(defn login-page [props request]
-  (login-form
-   (:uri request)
-   "Login"
-   (form-layout-grid [1 1]
-                     :login
-                     [(form-textfield props :username {:size 25} :required)
-                      (form-password props :password {:size 25}  :required)]
-                     request
-                     {})))
-
 (defn valid-password?
   ([user-data] (valid-password? user-data *hash-delay*))
   ([user-data n]
      (= (hash-password (:password user-data) (:salt user-data) n)
         (:password-hash user-data))))
+
+;;
+;; New way
+;; ======
+;;
+
+(defn password-validator
+  ([user-data] (valid-password? user-data *hash-delay*))
+  ([user-data n]
+     (if (= (hash-password (:password user-data) (:salt user-data) n)
+            (:password-hash user-data))
+       user-data
+       (add-validation-error user-data
+                             :password
+                             "Incorrect username or password!"))))
+
+(defn login-validator [props]
+  (fn [m]
+    (-> m
+        (non-empty-string :username props)
+        (non-empty-string :password props)
+        password-validator)))
+
+;;
+;; End New Way
+;; ===========
+;;
 
 (defn authenticate! [load-fn props params]
   (let [user-data (create-login-from-params load-fn params)
