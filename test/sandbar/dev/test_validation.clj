@@ -12,14 +12,24 @@
                      [test :only (t)])))
 
 (deftest test-add-validation-errors
-  (is (= (add-validation-error {} :a "a")
-         {:_validation-errors {:a ["a"]}}))
-  (is (= (add-validation-error {:a "a"} :a "a")
-         {:a "a" :_validation-errors {:a ["a"]}} ))
-  (is (= (add-validation-error {:a "a" :_validation-errors {:a ["a"]}} :a "b")
-         {:a "a" :_validation-errors {:a ["a" "b"]}}))
-  (is (= (add-validation-error {:a "a" :_validation-errors {:a ["a"]}} :b "b")
-         {:a "a" :_validation-errors {:a ["a"] :b ["b"]}})))
+  (t "add validation error"
+     (t "when errors are empt"
+        (is (= (add-validation-error {} :a "a")
+               {:_validation-errors {:a ["a"]}})))
+     (t "when no key is passed, error goes in :form key"
+        (is (= (add-validation-error {} "a")
+               {:_validation-errors {:form ["a"]}})))
+     (t "when error key exists in form data"
+        (is (= (add-validation-error {:a "a"} :a "a")
+               {:a "a" :_validation-errors {:a ["a"]}} )))
+     (t "when validation errors exist and putting new value in same key"
+        (is (= (add-validation-error {:a "a" :_validation-errors {:a ["a"]}}
+                                     :a "b")
+               {:a "a" :_validation-errors {:a ["a" "b"]}})))
+     (t "when validation errors exist and adding new error"
+        (is (= (add-validation-error {:a "a" :_validation-errors {:a ["a"]}}
+                                     :b "b")
+               {:a "a" :_validation-errors {:a ["a"] :b ["b"]}})))))
 
 (defn example-validator
   "A validator takes a map as an argument and then returns the map with a
@@ -53,9 +63,18 @@
      (t "when string is empty"
         (is (= (non-empty-string {:a ""} :a "error")
                {:a "" :_validation-errors {:a ["error"]}}))
-        (is (= (non-empty-string {:a ""} :a {:a "Username"})
-               {:a "" :_validation-errors
-                {:a ["The Username field cannot be blank?"]}})))
+        (t "with map message"
+           (is (= (non-empty-string {:a ""} :a {:a "Username"})
+                  {:a "" :_validation-errors
+                   {:a ["Username cannot be blank!"]}})))
+        (t "with empty message"
+           (is (= (non-empty-string {:a ""} :a)
+                  {:a "" :_validation-errors
+                   {:a ["a cannot be blank!"]}})))
+        (t "with custom error message"
+           (is (= (non-empty-string {:a ""} :a {:a-validation-error "x"})
+                  {:a "" :_validation-errors
+                   {:a ["x"]}}))))
      (t "when nil instead of string"
         (is (= (non-empty-string {:a nil} :a "error")
                {:a nil :_validation-errors {:a ["error"]}})))
@@ -63,5 +82,98 @@
         (is (= (non-empty-string {:a "a"} :a "error")
                {:a "a"})))))
 
-
+(deftest test-build-validator
+  (t "build validator"
+     (t "out of one validator fn and validation passes"
+        (is (= ((build-validator (non-empty-string :a)) {:a "a"})
+               {:a "a"})))
+     (t "out of one validator fn and validation fails"
+        (is (= ((build-validator (non-empty-string :a)) {:a ""})
+               {:a ""
+                :_validation-errors {:a ["a cannot be blank!"]}})))
+     (t "out of two validators fns and validation passes"
+        (is (= ((build-validator (non-empty-string :a)
+                                 (non-empty-string :b)) {:a "a" :b "b"})
+               {:a "a" :b "b"})))
+     (t "out of two validators fns and validation fails for one"
+        (is (= ((build-validator (non-empty-string :a)
+                                 (non-empty-string :b)) {:a "a" :b ""})
+               {:a "a" :b ""
+                :_validation-errors {:b ["b cannot be blank!"]}})))
+     (t "out of three validators with an ensure, all validations pass"
+        (is (= ((build-validator (non-empty-string :a)
+                                 (non-empty-string :b)
+                                 :ensure
+                                 (non-empty-string :c)) {:a "a" :b "b" :c "c"})
+               {:a "a" :b "b" :c "c"})))
+     (t "out of four validators with an ensure in the middle, all pass"
+        (is (= ((build-validator (non-empty-string :a)
+                                 (non-empty-string :b)
+                                 :ensure
+                                 (non-empty-string :c)
+                                 (non-empty-string :d))
+                {:a "a" :b "b" :c "c" :d "d"})
+               {:a "a" :b "b" :c "c" :d "d"})))
+     (t "error after :ensure is not detected if there is error before"
+        (is (= ((build-validator (non-empty-string :a)
+                                 (non-empty-string :b)
+                                 :ensure
+                                 (non-empty-string :c)) {:a "a" :b "" :c ""})
+               {:a "a" :b "" :c ""
+                :_validation-errors {:b ["b cannot be blank!"]}})))
+     (t "error after :ensure is detected if no error before"
+        (is (= ((build-validator (non-empty-string :a)
+                                 (non-empty-string :b)
+                                 :ensure
+                                 (non-empty-string :c)) {:a "a" :b "b" :c ""})
+               {:a "a" :b "b" :c ""
+                :_validation-errors {:c ["c cannot be blank!"]}})))
+     (t "thee levels of nesting"
+        (is (= ((build-validator (non-empty-string :a)
+                                 (non-empty-string :b)
+                                 :ensure
+                                 (non-empty-string :c)
+                                 (non-empty-string :d)
+                                 :ensure
+                                 (non-empty-string :e)
+                                 (non-empty-string :f))
+                {:a "a" :b "b" :c "c" :d "d" :e "e" :f "f"})
+               {:a "a" :b "b" :c "c" :d "d" :e "e" :f "f"})))
+     (t "errors in first group hides other errors"
+        (is (= ((build-validator (non-empty-string :a)
+                                 (non-empty-string :b)
+                                 :ensure
+                                 (non-empty-string :c)
+                                 (non-empty-string :d)
+                                 :ensure
+                                 (non-empty-string :e)
+                                 (non-empty-string :f))
+                {:a "a" :b "" :c "" :d "" :e "" :f ""})
+               {:a "a" :b "" :c "" :d "" :e "" :f ""
+                :_validation-errors {:b ["b cannot be blank!"]}})))
+     (t "errors in second group hides third group's errors"
+        (is (= ((build-validator (non-empty-string :a)
+                                 (non-empty-string :b)
+                                 :ensure
+                                 (non-empty-string :c)
+                                 (non-empty-string :d)
+                                 :ensure
+                                 (non-empty-string :e)
+                                 (non-empty-string :f))
+                {:a "a" :b "b" :c "" :d "d" :e "" :f ""})
+               {:a "a" :b "b" :c "" :d "d" :e "" :f ""
+                :_validation-errors {:c ["c cannot be blank!"]}})))
+     (t "find errors in third group"
+        (is (= ((build-validator (non-empty-string :a)
+                                 (non-empty-string :b)
+                                 :ensure
+                                 (non-empty-string :c)
+                                 (non-empty-string :d)
+                                 :ensure
+                                 (non-empty-string :e)
+                                 (non-empty-string :f))
+                {:a "a" :b "b" :c "c" :d "d" :e "" :f ""})
+               {:a "a" :b "b" :c "c" :d "d" :e "" :f ""
+                :_validation-errors {:e ["e cannot be blank!"]
+                                     :f ["f cannot be blank!"]}})))))
 

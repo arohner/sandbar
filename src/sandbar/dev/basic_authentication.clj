@@ -56,20 +56,13 @@
             (:password-hash user-data))
        user-data
        (add-validation-error user-data
-                             :password
                              "Incorrect username or password!"))))
 
-(defn login-validator
-  "Create the login validator from individual validator functions. Only
-   check the validity of the password if the user entered one."
-  [props]
-  (fn [m]
-    (let [v (-> m
-                (non-empty-string :username props)
-                (non-empty-string :password props))]
-      (if (= m v)
-        (password-validator m)
-        v))))
+(defn login-validator [props]
+  (build-validator (non-empty-string :username props)
+                   (non-empty-string :password props)
+                   :ensure
+                   password-validator))
 
 (defn authenticate! [load-fn props params]
   (let [user-data (create-login-from-params load-fn params)

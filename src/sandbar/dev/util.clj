@@ -10,6 +10,9 @@
   (:use [clojure.contrib.str-utils :only (re-split re-gsub)])
   (:import (java.io File)))
 
+(defn append-to-keyword [k s]
+  (keyword (str (name k) s)))
+
 (defn path-to-seq [path]
   (filter #(not (.equals % "")) (re-split #"/" path)))
 
