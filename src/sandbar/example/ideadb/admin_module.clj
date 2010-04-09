@@ -6,17 +6,18 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.example.ideadb.admin_module
+(ns sandbar.example.ideadb.admin-module
   (:use (hiccup core)
         (compojure core)
         (ring.util [response :only (redirect)])
         (sandbar core auth)
         (sandbar.dev tables forms html standard-pages util
-                     basic-authentication userui)
-        (sandbar.example.ideadb
-         [layouts :only (main-layout form-layout admin-users-layout)]
-         [model]
-         [user_module])))
+                     basic-authentication userui list-manager)
+        (sandbar.example.ideadb model
+                                user-module
+                                [layouts :only (main-layout
+                                                form-layout
+                                                admin-users-layout)])))
 
 (defn edit-idea-form [request params]
   (let [form-data (find-by-id :idea (get params "id"))]

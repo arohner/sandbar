@@ -8,8 +8,9 @@
 
 (ns sandbar.dev.list-manager
   "Editor for simple lists."
-  (:use (hiccup core)
-        (sandbar.dev forms tables)))
+  (:use (ring.util [response :only (redirect)])
+        (hiccup core page-helpers)
+        (sandbar.dev forms tables standard-pages)))
 
 (defn list-editor-display-list [paged-list-fn type props finished]
   (let [paged-list (paged-list-fn type {})]

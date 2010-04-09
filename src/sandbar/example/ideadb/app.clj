@@ -16,8 +16,8 @@
         (sandbar.dev [standard-pages :only (page-not-found-404)]
                      [basic-authentication :only (basic-auth)])
         (sandbar.example.ideadb
-         [user_module :only (user-module-routes with-db-configured)]
-         [admin_module :only (admin-module-routes)]
+         [user-module :only (user-module-routes with-db-configured)]
+         [admin-module :only (admin-module-routes)]
          [layouts :only (main-layout)])))
 
 (defroutes development-routes
@@ -46,7 +46,7 @@
          (with-secure-channel security-config 8080 8443)
          wrap-stacktrace))
 
-(run-jetty (var app) {:ssl? true :port 8080 :ssl-port 8443
+(run-jetty (var app) {:join? false :ssl? true :port 8080 :ssl-port 8443
                       :keystore "my.keystore"
                       :key-password "foobar"})
 

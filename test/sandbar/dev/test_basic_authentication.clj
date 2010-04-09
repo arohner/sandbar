@@ -66,8 +66,8 @@
                                       {"username" "u" "password" "wrong"})]
             (is (= result
                    (redirect "login")))
-            (is (= @*sandbar-session*
-                   {:auth-redirect-uri "/test"})))))))
+            (is (= (:auth-redirect-uri @*sandbar-session*)
+                   "/test")))))))
 
 (deftest test-with-security-with-basic-auth
   (binding [*sandbar-session* (atom {})]

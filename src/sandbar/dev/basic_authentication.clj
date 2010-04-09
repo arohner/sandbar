@@ -48,37 +48,9 @@
                      request
                      {})))
 
-;;
-;; The old way
-;; ==========
-;;
-
-(def invalid-login?!
-     (partial
-      invalid?
-      :login
-      (fn [props form-data]
-        (merge
-         (required-field form-data :username
-                         (str (property-lookup props :username)
-                              " is required."))
-         (required-field form-data :password
-                         (str (property-lookup props :password)
-                              " is required."))))))
-
-(defn valid-password?
-  ([user-data] (valid-password? user-data *hash-delay*))
-  ([user-data n]
-     (= (hash-password (:password user-data) (:salt user-data) n)
-        (:password-hash user-data))))
-
-;;
-;; New way
-;; ======
-;;
-
 (defn password-validator
-  ([user-data] (valid-password? user-data *hash-delay*))
+  "Validator functions return the input map with or without error messages."
+  ([user-data] (password-validator user-data *hash-delay*))
   ([user-data n]
      (if (= (hash-password (:password user-data) (:salt user-data) n)
             (:password-hash user-data))
@@ -87,17 +59,17 @@
                              :password
                              "Incorrect username or password!"))))
 
-(defn login-validator [props]
+(defn login-validator
+  "Create the login validator from individual validator functions. Only
+   check the validity of the password if the user entered one."
+  [props]
   (fn [m]
-    (-> m
-        (non-empty-string :username props)
-        (non-empty-string :password props)
-        password-validator)))
-
-;;
-;; End New Way
-;; ===========
-;;
+    (let [v (-> m
+                (non-empty-string :username props)
+                (non-empty-string :password props))]
+      (if (= m v)
+        (password-validator m)
+        v))))
 
 (defn authenticate! [load-fn props params]
   (let [user-data (create-login-from-params load-fn params)
@@ -105,14 +77,16 @@
                     (property-lookup props :login-page))
         failure "login"]
     (redirect
-     (cond (invalid-login?! props user-data) failure
-           (not (valid-password? user-data)) failure
-           :else (do
-                   (session-put! :current-user
-                                 {:name (:username user-data)
-                                  :roles (:roles user-data)})
-                   (session-delete-key! :auth-redirect-uri)
-                   success)))))
+     (if-valid (login-validator props) user-data
+               #(do
+                  (session-put! :current-user
+                                {:name (:username %)
+                                 :roles (:roles %)})
+                  (session-delete-key! :auth-redirect-uri)
+                  success)
+               #(do (set-flash-value! :login
+                                      (merge {:form-data %1} %2))
+                    failure)))))
 
 ;;
 ;; Routes

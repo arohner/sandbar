@@ -16,6 +16,7 @@
 ;; ==========
 ;;
 
+;; this is deprecated - see validation.clj
 (defn invalid? [name validation-fn props form-data]
   (if-let [errors (validation-fn props form-data)]
     (do (set-flash-value! name
@@ -23,6 +24,7 @@
         true)
     false))
 
+;; this is deprecated - see validation.clj
 (defn required-field [m k msg]
   (if (empty? (k m)) {k msg}))
 

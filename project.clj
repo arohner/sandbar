@@ -11,7 +11,8 @@
                      [ring/ring-httpcore-adapter "0.2.0"]
                      [ring/ring-servlet "0.2.0"]
                      [mysql/mysql-connector-java "5.1.6"]
-                     [mstate "0.0.1-SNAPSHOT"]]
+                     [mstate "0.0.1-SNAPSHOT"]
+                     [jline "0.9.94"]]
   :namespaces [sandbar.core
                sandbar.auth
                sandbar.stateful_session
