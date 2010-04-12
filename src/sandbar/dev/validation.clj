@@ -84,20 +84,43 @@
 ;; ==========
 ;;
 
-(defn non-empty-string
-  ([m k] (non-empty-string m k {}))
-  ([m k msg]
-     (let [value (get m k)]
-    (if (and (string? value)
-             (not (empty? value)))
-      m
-      (add-validation-error
-       m
-       k
-       (if (map? msg)
-         (if-let [custom-error-message
-                  (get msg (append-to-keyword k "-validation-error"))] 
-           custom-error-message
-           (str (property-lookup msg k) " cannot be blank!"))
-         msg))))))
+(defn multi-value-validator
+  "Validate multiple values in a map. args is a list of keys possibly ending
+   with a message string or map. v-fn is the validation function which is a
+   function of the key to validate. default-message is either a string or a
+   function of the message map and key which returns a string."
+  [m args v-fn default-message]
+  (let [key-seq (take-while keyword? args)
+        msg (last args)
+        msg (if (keyword? msg) {} msg)]
+    (loop [key-seq key-seq
+           m m]
+      (if (empty? key-seq)
+        m
+        (let [k (first key-seq)]
+          (if (v-fn k)
+            (recur (rest key-seq) m)
+            (recur (rest key-seq)
+                   (add-validation-error
+                    m
+                    k
+                    (if (map? msg)
+                      (if-let [custom-error-message
+                               (get msg (append-to-keyword
+                                         k
+                                         "-validation-error"))] 
+                        custom-error-message
+                        (if (fn? default-message)
+                          (default-message k msg)
+                          default-message))
+                      msg)))))))))
+
+(defn non-empty-string [m & args]
+  (multi-value-validator m args
+                         (fn [k]
+                           (let [value (get m k)]
+                             (and (string? value)
+                                  (not (empty? value)))))
+                         (fn [k msg]
+                           (str (property-lookup msg k) " cannot be blank!"))))
 

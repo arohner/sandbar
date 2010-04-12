@@ -27,7 +27,7 @@ By completed, I mean that they have taken the final form that they will have in 
 
 h2. Using sandbar in your project
 
-If you would like to use Sandbar in your project then you may use the currently available 0.2.1 realease that is on Clojars.
+If you would like to use Sandbar in your project then you may use the currently available 0.2.1 release that is on Clojars.
 
 To include Sandbar in your Leiningen project, add the following to your <code>:dependencies</code>
 
@@ -70,7 +70,7 @@ $ (load-file "src/testdrive.clj")
 </code>
 </pre>
 
-You may now open a browser and go to http://localhost:8080/ideadb/.
+You may now open a browser and go to http://localhost:8080/.
 
 There are two user accounts:
 

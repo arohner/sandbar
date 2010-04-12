@@ -88,6 +88,10 @@
         (t "where validation fails for one keyword"
            (is (= (non-empty-string {:a "a" :b ""} :a :b "error")
                   {:a "a" :b "" :_validation-errors {:b ["error"]}})))
+        (t "where validation fails for one keyword and no error message"
+           (is (= (non-empty-string {:a "a" :b ""} :a :b)
+                  {:a "a" :b ""
+                   :_validation-errors {:b ["b cannot be blank!"]}})))
         (t "where validation fails for one keyword with properties"
            (is (= (non-empty-string {:a "a" :b ""} :a :b {:b "b"})
                   {:a "a" :b ""
