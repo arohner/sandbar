@@ -59,7 +59,7 @@
                     ":a does not contain the letter a")))))))
 
 (deftest test-non-empty-string
-  (t "test non-empty-string"
+  (t "test non-empty string"
      (t "when string is empty"
         (is (= (non-empty-string {:a ""} :a "error")
                {:a "" :_validation-errors {:a ["error"]}}))
@@ -80,7 +80,23 @@
                {:a nil :_validation-errors {:a ["error"]}})))
      (t "when value is non-empty string"
         (is (= (non-empty-string {:a "a"} :a "error")
-               {:a "a"})))))
+               {:a "a"})))
+     (t "with multiple keywords"
+        (t "where validation passes"
+           (is (= (non-empty-string {:a "a" :b "b"} :a :b "error")
+                  {:a "a" :b "b"})))
+        (t "where validation fails for one keyword"
+           (is (= (non-empty-string {:a "a" :b ""} :a :b "error")
+                  {:a "a" :b "" :_validation-errors {:b ["error"]}})))
+        (t "where validation fails for one keyword with properties"
+           (is (= (non-empty-string {:a "a" :b ""} :a :b {:b "b"})
+                  {:a "a" :b ""
+                   :_validation-errors {:b ["b cannot be blank!"]}})))
+        (t "where validation fails for all keywords with properties"
+           (is (= (non-empty-string {:a "" :b ""} :a :b {:a "a" :b "b"})
+                  {:a "" :b ""
+                   :_validation-errors {:b ["b cannot be blank!"]
+                                        :a ["a cannot be blank!"]}}))))))
 
 (deftest test-build-validator
   (t "build validator"
