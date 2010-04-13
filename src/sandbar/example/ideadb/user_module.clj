@@ -15,7 +15,8 @@
                               current-user-roles
                               any-role-granted?)]
                  stateful-session)
-        (sandbar.dev tables forms html standard-pages util)
+        (sandbar.dev tables forms html standard-pages util
+                     validation)
         (sandbar.example.ideadb
          [layouts :only (main-layout list-layout form-layout)]
          [model])))
@@ -192,36 +193,37 @@
                  (assoc :type :idea))]
     (clean-form-input idea)))
 
-(def invalid-idea?!
-     (partial
-      invalid?
-      :idea
-      (fn [props form-data]
-        (merge
-         (required-field form-data :description "Please enter a description.")
-         (required-field form-data :name "Please enter a name.")
-         (required-field form-data :customer_need
-                         "Please enter a customer need.")))
-      properties))
+(def idea-validator
+     (build-validator (non-empty-string :description
+                                        "Please enter a description.")
+                      (non-empty-string :name
+                                        "Please enter a name.")
+                      (non-empty-string :customer_need
+                                        "Please enter a customer need.")))
+
+(defn validation-success-fn [action success]
+  (fn [form-data]
+    (do
+      (save form-data)
+      (set-flash-value! :user-message (if (= action "new")
+                                        "Your idea has been successfully
+                                         submitted."
+                                        "The idea has been updated."))
+      success)))
 
 (defn save-idea! [params action]
-  (let [form-data (create-idea-from-params params)
-        submit (get params "submit")
-        success (if (= submit "Save and New")
-                  (cpath "/idea/new")
-                  (cpath "/idea/list"))
-        failure (cpath (str "/idea/" action))]
-    (redirect
-     (cond (form-cancelled? params) success
-           (invalid-idea?! form-data) failure
-           :else (do
-                   (set-flash-value! :user-message
-                                     (if (= action "new")
-                                       "Your idea has been successfully
-                                        submitted."
-                                       "The idea has been updated."))
-                   (save form-data)
-                   success)))))
+  (redirect
+   (let [submit (get params "submit")
+         success (if (= submit "Save and New")
+                   (cpath "/idea/new")
+                   (cpath "/idea/list"))]
+     (if (form-cancelled? params)
+       success
+       (let [form-data (create-idea-from-params params)
+             failure (cpath (str "/idea/" action))]
+         (if-valid idea-validator form-data
+                   (validation-success-fn action success)
+                   (store-errors-and-redirect :idea failure)))))))
 
 ;;
 ;; Routes

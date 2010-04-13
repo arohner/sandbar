@@ -10,7 +10,8 @@
   "Editor for simple lists."
   (:use (ring.util [response :only (redirect)])
         (hiccup core page-helpers)
-        (sandbar.dev forms tables standard-pages)))
+        (sandbar stateful-session)
+        (sandbar.dev forms tables standard-pages validation)))
 
 (defn list-editor-display-list [paged-list-fn type props finished]
   (let [paged-list (paged-list-fn type {})]
@@ -61,13 +62,11 @@
           (confirm-delete find-by-id-fn type props (get params "id"))
           :else "This action is not implemented...")))
 
-(defn validate-list-item [props form-data]
-  (required-field form-data :name "Please enter a name."))
-
 (defn save-list-item [save-fn type form-data action]
-  (cond (invalid? type validate-list-item {} form-data) action
-         :else (do (save-fn form-data)
-                   "list")))
+  (if-valid #(non-empty-string % :name "Please enter a name.") form-data
+            #(do (save-fn %)
+                 "list")
+            (store-errors-and-redirect type action)))
 
 (defn list-updater [save-fn delete-by-id-fn type params]
   (let [action (params :*)]

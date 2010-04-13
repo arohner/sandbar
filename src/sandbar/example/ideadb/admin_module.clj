@@ -1,10 +1,10 @@
-; Copyright (c) Brenton Ashworth. All rights reserved.
-; The use and distribution terms for this software are covered by the
-; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-; which can be found in the file COPYING at the root of this distribution.
-; By using this software in any fashion, you are agreeing to be bound by
-; the terms of this license.
-; You must not remove this notice, or any other, from this software.
+;; Copyright (c) Brenton Ashworth. All rights reserved.
+;; The use and distribution terms for this software are covered by the
+;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;; which can be found in the file COPYING at the root of this distribution.
+;; By using this software in any fashion, you are agreeing to be bound by
+;; the terms of this license.
+;; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.example.ideadb.admin-module
   (:use (hiccup core)
@@ -12,7 +12,8 @@
         (ring.util [response :only (redirect)])
         (sandbar core auth)
         (sandbar.dev tables forms html standard-pages util
-                     basic-authentication userui list-manager)
+                     basic-authentication userui list-manager
+                     validation)
         (sandbar.example.ideadb model
                                 user-module
                                 [layouts :only (main-layout
@@ -65,6 +66,7 @@
               (cpath "/admin/list")))
 (def my-list-updater (partial list-updater save delete-by-id))
 
+;; It might be good to make this a protocol
 (defn user-data-functions [k]
   (cond (= k :save)
         (fn [m]
@@ -147,5 +149,5 @@
   (security-edit-user-routes "/admin" (var admin-users-layout) (fn [r] (:uri r))
                              properties user-data-functions)
   (auth-login-routes "" main-layout (fn [r] (:uri r))
-                     properties (user-data-functions :load)))
+                     properties (UserModel (user-data-functions :load))))
 

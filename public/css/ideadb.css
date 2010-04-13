@@ -53,6 +53,29 @@ div#form-page-header {
 div.form {
 }
 
+div.form input.sandbar-textfield {
+ font-family: Arial, Helvetica, sans-serif;
+   font-size: 15px;
+   border: 1px solid #ccc;
+   padding: 5px; 
+   color: #4d4d4d;
+}
+
+div.form textarea {
+ font-family: Arial, Helvetica, sans-serif;
+   font-size: 15px;
+   border: 1px solid #ccc;
+   padding: 5px; 
+   color: #4d4d4d;
+}
+
+div.form input.sandbar-button {
+   font: arial,sans-serif
+   padding: 5px;
+   font-size: 17px;
+   color: #4d4d4d;
+}
+
 div.form form {
  margin: 10px;
  margin-top: 20px;

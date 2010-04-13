@@ -12,25 +12,19 @@
         (sandbar.dev util)))
 
 ;;
-;; Validation
-;; ==========
+;; Validation Helpers
+;; ==================
 ;;
 
-;; this is deprecated - see validation.clj
-(defn invalid? [name validation-fn props form-data]
-  (if-let [errors (validation-fn props form-data)]
+(defn store-errors-and-redirect [name redirect-page]
+  (fn [form-data errors]
     (do (set-flash-value! name
                           (merge {:form-data form-data} errors))
-        true)
-    false))
-
-;; this is deprecated - see validation.clj
-(defn required-field [m k msg]
-  (if (empty? (k m)) {k msg}))
+        redirect-page)))
 
 ;;
-;; Forms
-;; =====
+;; Form Layout
+;; ===========
 ;;
 
 (defn layout-table
@@ -81,14 +75,26 @@
           (map name key-map)))
 
 (defn cancel-button []
-  [:input {:type "submit" :value "Cancel" :name "cancel"}])
+  [:input {:type "submit" :value "Cancel" :name "cancel"
+           :class "sandbar-button"}])
+
+(defn new-submit-button
+  ([] (new-submit-button "submit"))
+  ([v]
+     [:input {:type "submit" :value v :name "submit"
+              :class "sandbar-button"}]))
+
+(defn new-reset-button [v]
+  [:input {:type "reset" :value v
+           :class "sandbar-button"}])
 
 (defn alt-submit-button [text]
-  [:input {:type "submit" :value text :name "submit"}])
+  [:input {:type "submit" :value text :name "submit"
+           :class "sandbar-button"}])
 
 (defn create-submit-button [[k v]]
-  (cond (= k :submit) (submit-button v)
-        :else (alt-submit-button v)))
+  (cond (= k :submit) (new-submit-button v)
+        :else (new-submit-button v)))
 
 (defn submit-and-cancel-buttons [horf submit-buttons]
   (let [submit-spec (if (map? submit-buttons)
@@ -129,9 +135,9 @@
                body]]
              [:tr
               [:td {:align "center"}
-               (submit-button submit-name)
-             "&nbsp;&nbsp;"
-             (reset-button "Reset")]]])])
+               (new-submit-button submit-name)
+               "&nbsp;&nbsp;"
+               (new-reset-button "Reset")]]])])
 
 (defn form-cancelled? [params]
   (= "Cancel" (get params "cancel")))
@@ -160,7 +166,8 @@
                                  (property-lookup title fname)
                                  title) req)
              [:input
-              (merge {:type "Text" :name (name fname) :value ""} options)]]}))
+              (merge {:type "Text" :name (name fname) :value ""
+                      :class "sandbar-textfield"} options)]]}))
 
 (defn form-password
   "Use form-textfield to create a text field and then change it to a
@@ -318,7 +325,7 @@
           entry-key (key entry)
           title (first (val entry))
           input-field (last (val entry))
-          error-message (entry-key form-state)
+          error-message (first (entry-key form-state))
           title-row (cond (checkbox? input-field)
                           [:div "&nbsp;"]
                           (checkbox-group? input-field)
@@ -351,7 +358,8 @@
 
 (defn form-layout-grid* [layout form-state coll]
   (let [the-form
-        (conj [:div]
+        (conj [:div (if-let [m (first (:form form-state))]
+                      [:div {:class "warning"} m])]
               (apply layout-table
                      layout
                      (map #(if-let [cell (create-form-field-cell form-state %)]

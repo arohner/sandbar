@@ -7,35 +7,43 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns sandbar.dev.basic-authentication
+  "Provide support for form based authentication."
   (:use (compojure core)
         (ring.util [response :only (redirect)])
-        (sandbar core auth stateful-session)
-        (sandbar.dev forms util validation)))
+        (sandbar [auth :only (logout!)]
+                 [stateful-session :only (session-get
+                                          session-put!
+                                          set-flash-value!
+                                          session-delete-key!)])
+        (sandbar.dev [forms :only (form-layout-grid
+                                   form-textfield
+                                   form-password
+                                   login-form
+                                   get-params
+                                   store-errors-and-redirect)]
+                     [validation :only (build-validator
+                                        non-empty-string
+                                        if-valid)]
+                     [util :only (property-lookup)])))
 
-;; This namespace should only depend on the fact that there is a
-;; username and password. Extract all of the specific user stuff into
-;; a protocol.
+(defprotocol BasicAuthUser
+  "Load user data and validate a user's password."
+  (load-login-user
+   [this username password]
+   "Load user data for the given credentials. Returns a map which contains at
+    least the keys :username and :roles. :roles contains a set of role
+    keywords. The map should also contain the data that is required to
+    validate this user's pas")
+  (validate-password
+   [this m]
+   "Validator function for the password. If the password is correct then
+    return the map. If the password is incorrect, return the map with error
+    messages."))
 
 (defn basic-auth [request]
   (do (session-put! :auth-redirect-uri
                     (:uri request))
       (redirect "/login")))
-
-(defn create-login-from-params
-  "Create a map of all login info to verify the identity of this user."
-  [load-fn params]
-  (let [form-data (get-params [:username :password] params)
-        user (first (load-fn :app_user
-                             {:username (:username form-data)} {}))
-        roles (index-by :id (load-fn :role))]
-    (-> form-data
-        (assoc :password-hash (:password user))
-        (assoc :salt (:salt user))
-        (assoc :roles (set
-                       (map #(keyword (:name (roles %)))
-                            (map :role_id
-                                 (load-fn :user_role
-                                          {:user_id (:id user)} {}))))))))
 
 (defn login-page [props request]
   (login-form
@@ -48,37 +56,31 @@
                      request
                      {})))
 
-(defn password-validator
-  "Validator functions return the input map with or without error messages."
-  ([user-data] (password-validator user-data *hash-delay*))
-  ([user-data n]
-     (if (= (hash-password (:password user-data) (:salt user-data) n)
-            (:password-hash user-data))
-       user-data
-       (add-validation-error user-data
-                             "Incorrect username or password!"))))
+(defn login-validator [user-model props]
+  (let [pw-validator #(validate-password user-model %)]
+    (build-validator (non-empty-string :username :password props)
+                     :ensure
+                     pw-validator)))
 
-(defn login-validator [props]
-  (build-validator (non-empty-string :username props)
-                   (non-empty-string :password props)
-                   :ensure
-                   password-validator))
-
-(defn authenticate! [load-fn props params]
-  (let [user-data (create-login-from-params load-fn params)
+(defn authenticate! [user-model props params]
+  (let [input (get-params [:username :password] params)
+        user-data (load-login-user user-model
+                                   (:username input)
+                                   (:password input))
         success (or (session-get :auth-redirect-uri)
                     (property-lookup props :login-page))
         failure "login"]
     (redirect
-     (if-valid (login-validator props) user-data
+     (if-valid (login-validator user-model props) user-data
                #(do
                   (session-put! :current-user
                                 {:name (:username %)
                                  :roles (:roles %)})
                   (session-delete-key! :auth-redirect-uri)
                   success)
-               #(do (set-flash-value! :login
-                                      (merge {:form-data %1} %2))
+               #(do (set-flash-value!
+                     :login
+                     (merge {:form-data (dissoc %1 :username :password)} %2))
                     failure)))))
 
 ;;
@@ -87,15 +89,15 @@
 ;;
 
 (defn auth-login-routes
-  ([layout name-fn props load-fn]
-     (auth-login-routes "" layout name-fn props load-fn))
-  ([path-prefix layout name-fn props load-fn]
+  ([layout name-fn props user-model]
+     (auth-login-routes "" layout name-fn props user-model))
+  ([path-prefix layout name-fn props user-model]
      (routes
       (GET (str path-prefix "/login*") request
            (layout (name-fn request)
                    request
                    (login-page props request)))
       (POST (str path-prefix "/login*") {params :params}
-            (authenticate! load-fn props params))
+            (authenticate! user-model props params))
       (GET (str path-prefix "/logout*") []
            (logout! props)))))

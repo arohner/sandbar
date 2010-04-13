@@ -12,7 +12,9 @@
         (sandbar core
                  stateful-session
                  [auth :only (hash-password)])
-        (sandbar.dev forms tables html util standard-pages)))
+        (sandbar.dev forms tables html util
+                     standard-pages validation
+                     basic-authentication)))
 
 (defn secure-user
   "Ensure that the user has a salt value associated with it and that if the
@@ -90,43 +92,29 @@
                (assoc user :password (:new_password user)))]
     user))
 
-;; make this more consice
-(def invalid-user?!
-     (partial
-      invalid?
-      :user
-      (fn [props form-data]
-        (merge
-         (required-field form-data :username
-                         (str (property-lookup props :username)
-                              " is required."))
-         (required-field form-data :new_password
-                         (str (property-lookup props :new_password)
-                              " is required."))
-         (required-field form-data :first_name
-                         (str (property-lookup props :first_name)
-                              " is required."))
-         (required-field form-data :last_name
-                         (str (property-lookup props :last_name)
-                              " is required."))
-         (required-field form-data :email
-                         (str (property-lookup props :email)
-                              " is required."))))))
+(defn user-validator [props]
+  (build-validator (non-empty-string :username
+                                     :new_password
+                                     :first_name
+                                     :last_name
+                                     :email props)))
 
 (defn save-user! [data-fns props request]
-  (let [save-or-update-fn (data-fns :save)
-        form-data (create-user-from-params (data-fns :load) (:params request))
-        submit (get (:params request) "submit")
-        success "list"
-        failure (cpath (:uri request))]
-    (redirect
-     (cond (form-cancelled? (:params request)) success
-           (invalid-user?! props form-data) failure
-           :else (do
-                   (save-or-update-fn (dissoc form-data :new_password))
-                   (set-flash-value! :user-message
-                                     "User has been saved.")
-                   success)))))
+  (redirect
+   (let [params (:params request)
+         success "list"]
+     (if (form-cancelled? params)
+       success
+       (let [save-or-update-fn (data-fns :save)
+             form-data (create-user-from-params (data-fns :load) params)
+             failure (cpath (:uri request))]
+         (if-valid (user-validator props) form-data
+                   #(do
+                      (save-or-update-fn (dissoc % :new_password))
+                      (set-flash-value! :user-message
+                                        "User has been saved.")
+                      success)
+                   (store-errors-and-redirect :user failure)))))))
 
 ;;
 ;; Functions for working with users
@@ -182,6 +170,29 @@
     (doseq [next-role roles]
       (delete-fn :user_role (:id next-role)))
     (delete-fn type (:id user))))
+
+(deftype UserModel [load-fn] BasicAuthUser
+  (load-login-user
+   [this username password]
+   (let [user (first (load-fn :app_user
+                              {:username username} {}))
+         roles (index-by :id (load-fn :role))]
+     (-> {:username username :password password}
+         (assoc :password-hash (:password user))
+         (assoc :salt (:salt user))
+         (assoc :roles (set
+                        (map #(keyword (:name (roles %)))
+                             (map :role_id
+                                  (load-fn :user_role
+                                           {:user_id (:id user)} {}))))))))
+  (validate-password
+   [this m]
+   (if (and (:salt m)
+            (:password-hash m)
+            (= (hash-password (:password m) (:salt m))
+               (:password-hash m)))
+     m
+     (add-validation-error m "Incorrect username or password!"))))
 
 ;;
 ;; Routes
