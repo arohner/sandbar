@@ -87,16 +87,18 @@
 
 (defn test-form-req-label [field-name]
   [:div {:class "field-label"} field-name
-   [:span {:class "required"} [:big " *"]]])
+   [:span {:class "required"} "*"]])
 
 (defn form-textfield-fixture [field-name value]
-  [:div [:input {:size 35 :type "Text" :name field-name :value value}]])
+  [:div [:input {:size 35 :type "Text" :name field-name :value value
+                 :class "sandbar-textfield"}]])
 
 (defn form-hidden-fixture [field-name value]
   [:input {:type "hidden" :name field-name :value value}])
 
 (defn form-password-fixture [field-name value]
-  [:div [:input {:size 35 :type "Password" :name field-name :value value}]])
+  [:div [:input {:size 35 :type "Password" :name field-name :value value
+                 :class "sandbar-textfield"}]])
 
 (deftest test-form-textfield
   (t "create a form textfield"

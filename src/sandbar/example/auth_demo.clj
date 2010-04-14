@@ -10,13 +10,14 @@
   "Simple example of using sandbar.auth with authorization at the function
    level."
   (:use (ring.adapter jetty)
-        (ring.middleware params)
+        (ring.middleware params file)
         (compojure core)
         (hiccup core page-helpers)
-        (sandbar core stateful-session auth)))
+        (sandbar core stateful-session auth)
+        (sandbar.dev html)))
 
-;; This code demonstrates how to use sandbar.auth. It creates a
-;; web page with two links, one to a member page and one to an admin
+;; Demonstrating how to use sandbar.auth. We create a web page with
+;; two links, one to a member page and one to an admin
 ;; page. The home page is visible to the public, the member page is
 ;; visible to members and the admin page is visible to admins. The
 ;; first link that you click on will authenticate you with that
@@ -39,23 +40,29 @@
 ;; ====
 ;; Note the use of any-role-granted? to selectively show text based on
 ;; the user's role. Also note the use of current-username to display
-;; the current user's username if a user is logged in.
+;; the current user's username if a user is logged in. We also include
+;; some basic styling.
 
 (defn layout [content]
   (html
-   [:h2 "Auth Demo"]
-   content
-   [:br]
-   [:div
-    (cond (any-role-granted? :admin)
-          "If you can see this then you are an admin!"
-          (any-role-granted? :member)
-          "If you can see this then you are a member!"
-          :else "Click on one of the links above to log in.")]  
-   [:div (if-let [username (current-username)]
-           [:div (str "You are logged in as " username ". ")
-            (link-to "logout" "Logout")]
-           "You are current not logged in.")]))
+   (doctype :html4)
+   [:html
+    [:head
+     (stylesheet "sandbar.css")]
+    [:body
+     [:h2 "Auth Demo"]
+     content
+     [:br]
+     [:div
+      (cond (any-role-granted? :admin)
+            "If you can see this then you are an admin!"
+            (any-role-granted? :member)
+            "If you can see this then you are a member!"
+            :else "Click on one of the links above to log in.")]  
+     [:div (if-let [username (current-username)]
+             [:div (str "You are logged in as " username ". ")
+              (link-to "logout" "Logout")]
+             "You are current not logged in.")]]]))
 
 ;;
 ;; Notice that there is no authorization stuff in the view. We simply
@@ -123,6 +130,8 @@
 (def app
      (-> my-routes
          (with-security authorize)
-         wrap-stateful-session))
+         wrap-stateful-session
+         (wrap-file "public")))
 
-(run-jetty (var app) {:port 8080})
+(defn run []
+  (run-jetty (var app) {:join? false :port 8080}))

@@ -33,7 +33,7 @@
    "Load user data for the given credentials. Returns a map which contains at
     least the keys :username and :roles. :roles contains a set of role
     keywords. The map should also contain the data that is required to
-    validate this user's pas")
+    validate this user's password.")
   (validate-password
    [this m]
    "Validator function for the password. If the password is correct then
@@ -83,19 +83,13 @@
                      (merge {:form-data (dissoc %1 :username :password)} %2))
                     failure)))))
 
-;;
-;; Routes
-;; ======
-;;
-
 (defn auth-login-routes
-  ([layout name-fn props user-model]
-     (auth-login-routes "" layout name-fn props user-model))
-  ([path-prefix layout name-fn props user-model]
+  ([layout props user-model]
+     (auth-login-routes "" layout props user-model))
+  ([path-prefix layout props user-model]
      (routes
       (GET (str path-prefix "/login*") request
-           (layout (name-fn request)
-                   request
+           (layout request
                    (login-page props request)))
       (POST (str path-prefix "/login*") {params :params}
             (authenticate! user-model props params))

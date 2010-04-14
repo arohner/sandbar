@@ -1,0 +1,91 @@
+html, body {
+   font-family: Verdana, Arial, Helvetica, sans-serif;
+   font-size: 12px;
+   background-color: #ffffff;
+}
+
+div.sandbar-form {
+   color: #666;
+}
+
+div.sandbar-form input.sandbar-textfield {
+   font-family: Arial, Helvetica, sans-serif;
+   font-size: 15px;
+   border: 1px solid #ccc;
+   padding: 5px; 
+   color: #4d4d4d;
+}
+
+div.sandbar-form input.sandbar-button {
+   font: arial,sans-serif
+   padding: 5px;
+   font-size: 17px;
+   color: #4d4d4d;
+}
+
+div.sandbar-form div.login-form {
+   display: inline-block;
+}
+
+div.sandbar-form div.login-buttons {
+   padding-top: 5px;
+   text-align: center;
+}
+
+div.sandbar-form div.error-message {
+   height: 24px;
+   padding-left: 24px;
+   background: url(../images/warning.png) no-repeat 4px 0px;
+   color: red;
+   vertical-align: bottom;
+}
+
+div.sandbar-form div.field-label {
+   padding-top: 3px;
+   margin-bottom: 5px;
+   font-weight: bold;
+}
+
+div.sandbar-form span.field-label {
+   padding-top: 3px;
+   font-weight: bold;
+}
+
+div.sandbar-form div.field-label span.required {
+   padding-left: 3px;
+   color: orange;
+}
+
+div.error, div.message, div.warning, div.help {
+   background-color: #ffffcc;
+   border: 1px solid #ccc;
+   color: #666;
+   font-family: Arial, Helvetica, sans-serif;
+   font-weight: bold;
+   margin: 10px auto;
+   padding: 5px;
+   text-align: left;
+   vertical-align: bottom;
+}
+
+div.error {
+   background: #ffffcc url(../images/error.png) no-repeat 3px 3px;
+   padding-left: 22px;
+   border: 1px solid red;
+}
+
+div.warning {
+   background: #ffffcc url(../images/warning.png) no-repeat 3px 3px;
+   padding-left: 22px;
+   border: 1px solid yellow;
+}
+
+div.message {
+   background: #ffffcc url(../images/about.png) no-repeat 3px 3px;
+   padding-left: 22px;
+}
+
+div.help {
+   background: #ffffcc url(../images/help.png) no-repeat 3px 3px;
+   padding-left: 22px;
+}

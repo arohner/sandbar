@@ -120,31 +120,28 @@
    (submit-and-cancel-buttons "footer" submit-buttons)])
 
 (defn standard-form [title action submit-name body]
-  [:div {:class "form"}
+  [:div {:class "sandbar-form"}
    (form-to [:post (cpath action)]
            (form-header title submit-name)
            body
            (form-footer submit-name))])
 
 (defn login-form [action submit-name body]
-  [:div {:class "form"}
+  [:div {:class "sandbar-form"}
    (form-to [:post (cpath action)]
-            [:table {:align "center"}
-             [:tr
-              [:td
-               body]]
-             [:tr
-              [:td {:align "center"}
-               (new-submit-button submit-name)
-               "&nbsp;&nbsp;"
-               (new-reset-button "Reset")]]])])
+            [:div {:class "login-form"}
+             body
+             [:div {:class "login-buttons"}
+              (new-submit-button submit-name)
+              "&nbsp;&nbsp;"
+              (new-reset-button "Reset")]])])
 
 (defn form-cancelled? [params]
   (= "Cancel" (get params "cancel")))
 
 (defn form-field-label [title req]
   [:div {:class "field-label"} title
-   (if (= req :required) [:span {:class "required"} [:big " *"]] "")])
+   (if (= req :required) [:span {:class "required"} "*"] "")])
 
 (defn form-textarea
   ([title fname options] (form-textarea title fname options :optional))
@@ -356,10 +353,14 @@
 
 (def one-column-layout (repeat 1))
 
+;; TODO: Display all of the form messages. Not just the first one.
 (defn form-layout-grid* [layout form-state coll]
-  (let [the-form
-        (conj [:div (if-let [m (first (:form form-state))]
-                      [:div {:class "warning"} m])]
+  (let [div (if-let [form-errors (:form form-state)]
+              [:div (let [messages (first form-errors)]
+                      [:div {:class "warning"} messages])]
+              [:div])
+        the-form
+        (conj div 
               (apply layout-table
                      layout
                      (map #(if-let [cell (create-form-field-cell form-state %)]
