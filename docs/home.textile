@@ -1,5 +1,3 @@
-h2. Sandbar Documentation
-
 Sandbar is a library for web applications that is meant to be used with Ring and Compojure.
 
 It is a component oriented library with the goal of allowing developers to get significant amounts of work done with the fewest lines of code. It aims to do this without telling you how to work. It is not a framework. Because of this, you may easily use only the parts of Sandbar that you need.

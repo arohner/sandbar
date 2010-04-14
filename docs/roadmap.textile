@@ -1,5 +1,3 @@
-h2. Road map
-
 For now, I would like to keep everything in one project to ease implementation, but in the future I may break each piece out into a separate library.
 
 h2. Release 0.2.*

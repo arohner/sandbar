@@ -1,0 +1,49 @@
+Both Ring and Compojure support a functional style of session management. This is a good way to implement sessions for a low level library. It is easy to use for simple handlers and for applications that don't do much with the session. But for large applications that do a lot of work in the session and need to access it from various parts of the application, it is difficult to use.
+
+For these types of applications it is much easier to think of the session more like a database - something that you can update and read at any time.
+
+This is the purpose of the <code>sandbar.stateful-session</code> namespace. It builds on top of Ring's functional session support and allows you put values in and get values from the session in a more intuitive way. 
+
+It is named stateful session because it is taking a statfeul approach to working with the session over a functional approach. This may seem dirty since we are all trying to be more functional but one of Clojure's strong points is giving us sane ways to deal with state when we need to. Let's face it, sessions are a place where we keep state.
+
+Many of the other parts of sandbar make use of stateful sessions. 
+
+h3. Usage
+
+Use the <code>wrap-stateful-session</code> wrapper to enable support for stateful sessions.
+<pre><code>
+(def app (-> my-routes
+             wrap-stateful-session
+             wrap-params))
+</code></pre>
+With this in place we may now use
+<pre><code>
+(session-put! k v)
+</code></pre>
+To put a value in the session under a key and
+<pre><code>
+(session-get k)
+(session-get k default)
+</code></pre>
+to get a value from the session. The second form above allows you to specify the default value to return if the key is not found in the session.
+
+If you need to delete a key from the session then use
+<pre><code>
+(session-delete-key! k)
+</code></pre>
+The session is stored in an atom during the life of the request. If you would like to use Clojure's update semantics to update the session with a function you may call:
+<pre><code>
+(update-session! update-fn value)
+</code></pre>
+This is just a shorthand for <code>swap!</code>.
+
+There is currently also a very simplistic implementation of flash support in the following "functions":
+<pre><code>
+(set-flash-value! k v)
+(get-flash-value k)
+</code></pre>
+<code>set-flash-value</code> will put a value in the flash and <code>get-flash-value</code> will retrieve the value and then delete it. You cannot get the same value twice from a call to <code>get-flash-value</code>. These are actually functions but with a hidden parameter, the current state of the session.
+
+h3. Example
+
+Please see the example code for working examples of how to use stateful sessions. First, have a look at <code>sandbar.example.session-demo<code> which shows a very simple example. For more complex examples, see the authentication demos and the ideadb reference application.
