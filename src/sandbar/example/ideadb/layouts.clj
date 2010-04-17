@@ -24,6 +24,7 @@
      [:meta {:http-equiv "X-UA-Compatible" :content "IE=EmulateIE7"}]
      [:title (str "Idea Database - " (s/capitalize title))]
      (icon "icon.png")
+     (stylesheet "sandbar.css")
      (stylesheet "ideadb.css")]
     [:body
      [:div {:id "page"}
@@ -48,16 +49,14 @@
                    (if-let [m (get-flash-value! :user-message)]
                      [:div {:class "message"}
                       m])
-                   body]]]]]]]]]]]]
-       [:tr
-        [:td
-         [:div {:id "footer"}
+                   body]]]]]]]]]]]]]
+      [:div {:id "footer"}
           [:div "For questions on the idea database please contact the system
                  administrator at 555-5555."]
           (if (not (nil? (current-user)))
             [:div "You are currently logged in as "
            [:b (current-username)] ". "
-           (clink-to "/logout" "logout")])]]]]]
+           (clink-to "/logout" "logout")])]]
      (javascript "ideadb.js")]]))
 
 (defn main-layout [title request & body]

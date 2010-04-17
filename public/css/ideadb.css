@@ -1,7 +1,5 @@
 html, body {
- font-family: Verdana, Arial, Helvetica, sans-serif;
- font-size: 12px;
- background-color: #4D4D4D;
+   background-color: #4D4D4D;
 }
 
 table.list {
@@ -50,40 +48,7 @@ div#form-page-header {
  color: #b2b2b2;
 }
 
-div.form {
-}
-
-div.form input.sandbar-textfield {
-   font-family: Arial, Helvetica, sans-serif;
-   font-size: 15px;
-   border: 1px solid #ccc;
-   padding: 5px; 
-   color: #4d4d4d;
-}
-
-div.form textarea {
-   font-family: Arial, Helvetica, sans-serif;
-   font-size: 15px;
-   border: 1px solid #ccc;
-   padding: 5px; 
-   color: #4d4d4d;
-}
-
-div.form input.sandbar-button {
-   font: arial,sans-serif
-   padding: 5px;
-   font-size: 17px;
-   color: #4d4d4d;
-}
-
-div.form form {
- margin: 10px;
- margin-top: 20px;
- font-family: Arial, Helvetica, sans-serif;
- font-size: 12px;
-}
-
-div.form div.form-header {
+div.sandbar-form div.form-header {
  padding: 3px;
  background: #e8ecf5 url(../images/form_blue_edit.png) no-repeat 4px 4px;
  border: 1px solid #777788;
@@ -91,11 +56,11 @@ div.form div.form-header {
  padding-left: 30px;
 }
 
-div.form div.form-header table {
+div.sandbar-form div.form-header table {
  width: 100%;
 }
 
-div.form span.form-title {
+div.sandbar-form span.form-title {
  font-family: Arial, Verdana, Arial, Helvetica, sans-serif;
  font-size: 18px;
  font-weight: bold;
@@ -108,39 +73,16 @@ div.form-header span.header-buttons {
  text-align: right;
 }
 
-div.form div.form-footer {
+div.sandbar-form div.form-footer {
  background: #e8ecf5;
  padding: 5px;
  border: 1px solid #777788;
  margin-top: 10px;
 }
 
-div.form td {
+div.sandbar-form td {
  padding-left: 5px;
  color: #666;
-}
-
-div.form div.error-message {
- height: 24px;
- padding-left: 24px;
- background: url(../images/warning.png) no-repeat 4px 0px;
- color: red;
- vertical-align: bottom;
-}
-
-div.form div.field-label {
- padding-top: 3px;
- margin-bottom: 5px;
- font-weight: bold;
-}
-
-div.form span.field-label {
- padding-top: 3px;
- font-weight: bold;
-}
-
-div.form div.field-label span.required {
- color: orange;
 }
 
 #rounded-border-content {
@@ -194,41 +136,6 @@ div#welcome-message {
  color: #666;
 }
 
-div.error, div.message, div.warning, div.help {
- background-color: #ffffcc;
- border: 1px solid #ccc;
- color: #666;
- font-family: Arial, Helvetica, sans-serif;
- font-weight: bold;
- margin: 10px auto;
- padding: 5px;
- text-align: left;
- vertical-align: bottom;
-}
-
-/* use a different color for the errors */
-div.error {
- background: #ffffcc url(../images/error.png) no-repeat 3px 3px;
- padding-left: 22px;
- border: 1px solid red;
-}
-
-div.warning {
- background: #ffffcc url(../images/warning.png) no-repeat 3px 3px;
- padding-left: 22px;
- border: 1px solid yellow;
-}
-
-div.message {
- background: #ffffcc url(../images/about.png) no-repeat 3px 3px;
- padding-left: 22px;
-}
-
-div.help {
- background: #ffffcc url(../images/help.png) no-repeat 3px 3px;
- padding-left: 22px;
-}
-
 div.filter-and-sort-controls {
  padding-top: 4px;
  padding-left: 10px;
@@ -239,20 +146,3 @@ div#idea-actions {
  height: 50px;
 }
 
-div.form span.group-title {
- position: relative;
- left: 15px;
- top: 8px;
- font-weight: bold;
- background: white;
-}
-
-div.form div.group {
- border: 1px solid #ccc;
- width: 96%;
- padding: 10px;
-}
-
-div.form div.group-checkbox {
- margin: 10px;
-}

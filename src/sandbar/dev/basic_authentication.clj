@@ -83,9 +83,9 @@
                      (merge {:form-data (dissoc %1 :username :password)} %2))
                     failure)))))
 
-(defn auth-login-routes
+(defn basic-auth-routes
   ([layout props user-model]
-     (auth-login-routes "" layout props user-model))
+     (basic-auth-routes "" layout props user-model))
   ([path-prefix layout props user-model]
      (routes
       (GET (str path-prefix "/login*") request

@@ -6,44 +6,40 @@ This is the purpose of the <code>sandbar.stateful-session</code> namespace. It b
 
 It is named stateful session because it is taking a statfeul approach to working with the session over a functional approach. This may seem dirty since we are all trying to be more functional but one of Clojure's strong points is giving us sane ways to deal with state when we need to. Let's face it, sessions are a place where we keep state.
 
-Many of the other parts of sandbar make use of stateful sessions. 
+Many of the other parts of sandbar make use of stateful sessions.
 
 h3. Usage
 
 Use the <code>wrap-stateful-session</code> wrapper to enable support for stateful sessions.
-<pre><code>
+
+<pre>
+<code>
 (def app (-> my-routes
              wrap-stateful-session
              wrap-params))
-</code></pre>
-With this in place we may now use
-<pre><code>
-(session-put! k v)
-</code></pre>
-To put a value in the session under a key and
-<pre><code>
-(session-get k)
-(session-get k default)
-</code></pre>
-to get a value from the session. The second form above allows you to specify the default value to return if the key is not found in the session.
+</code>
+</pre>
 
-If you need to delete a key from the session then use
-<pre><code>
-(session-delete-key! k)
-</code></pre>
-The session is stored in an atom during the life of the request. If you would like to use Clojure's update semantics to update the session with a function you may call:
-<pre><code>
-(update-session! update-fn value)
-</code></pre>
-This is just a shorthand for <code>swap!</code>.
+With this in place we may now use <code>(session-put! k v)</code> to put a value in the session under a key and <code>(session-get k)</code> or <code>(session-get k default)</code> to get a value from the session. The second form above allows you to specify the default value to return if the key is not found in the session.
 
-There is currently also a very simplistic implementation of flash support in the following "functions":
-<pre><code>
-(set-flash-value! k v)
-(get-flash-value k)
-</code></pre>
-<code>set-flash-value</code> will put a value in the flash and <code>get-flash-value</code> will retrieve the value and then delete it. You cannot get the same value twice from a call to <code>get-flash-value</code>. These are actually functions but with a hidden parameter, the current state of the session.
+If you need to delete a key from the session then use <code>(session-delete-key! k)</code>.
+
+The session is stored in an atom during the life of the request. If you would like to use Clojure's update semantics to update the session with a function you may call <code>(update-session! update-fn value)</code> which is just a shorthand for Clojure's <code>swap!</code>.
+
+There is currently also a very simplistic implementation of flash support in the "functions" <code>(set-flash-value! k v)</code> and <code>(get-flash-value k)</code>.
+
+<code>set-flash-value!</code> will put a value in the flash and <code>get-flash-value</code> will retrieve the value and then delete it. You cannot get the same value twice from a call to <code>get-flash-value</code>. These are actually functions but with a hidden parameter, the current state of the session.
 
 h3. Example
 
-Please see the example code for working examples of how to use stateful sessions. First, have a look at <code>sandbar.example.session-demo<code> which shows a very simple example. For more complex examples, see the authentication demos and the ideadb reference application.
+Please see the example code for working examples of how to use stateful sessions. First, have a look at <code>sandbar.example.session-demo</code> which shows a very simple example. For more complex examples, see the authentication demos and the ideadb reference application.
+
+h3. Limitations
+
+If you use the <code>wrap-stateful-session</code> wrapper, it will include Ring's session wrapper. This means that you may work with both styles of session management at the same time. Adding this library to an existing project that uses the functional approach should not break the application.
+
+All information put into the stateful session map will be stored under the key <code>:sandbar-session</code> within the session. The purpose of this is to provide a separate namespace so that libraries that use the stateful session will not conflict with user code. This means that you cannot easily interoperate between the two approaches. For example, you cannot put something in the session in the functional style and then get it using <code>session-get</code> (unless, when using the functional style, you put the value in the map under <code>:sandbar-session</code>, but this is not recommended).
+
+There is only one subtle change in the way functional session management works. Returning nil will not delete a session if there is state in the stateful session. The reason for this is that from the point of view of Ring's session implementation, you did not return nil. For each request, the information in the statful session map is merged with the session information returned by the function.
+
+You should pick the approach that is right for your application and stick with it. The main point is that if you choose to use some part of this library that uses stateful sessions, you are not forced to use them.

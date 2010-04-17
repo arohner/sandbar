@@ -5,7 +5,11 @@ html, body {
 }
 
 div.sandbar-form {
+   font-family: Arial, Helvetica, sans-serif;
    color: #666;
+   margin: 10px;
+   margin-top: 20px;
+   font-size: 12px;
 }
 
 div.sandbar-form input.sandbar-textfield {
@@ -14,6 +18,32 @@ div.sandbar-form input.sandbar-textfield {
    border: 1px solid #ccc;
    padding: 5px; 
    color: #4d4d4d;
+}
+
+div.sandbar-form textarea {
+   font-family: Arial, Helvetica, sans-serif;
+   font-size: 15px;
+   border: 1px solid #ccc;
+   padding: 5px; 
+   color: #4d4d4d;
+}
+
+div.sandbar-form span.group-title {
+ position: relative;
+ left: 15px;
+ top: 8px;
+ font-weight: bold;
+ background: white;
+}
+
+div.sandbar-form div.group {
+ border: 1px solid #ccc;
+ width: 96%;
+ padding: 10px;
+}
+
+div.sandbar-form div.group-checkbox {
+ margin: 10px;
 }
 
 div.sandbar-form input.sandbar-button {
@@ -68,6 +98,7 @@ div.error, div.message, div.warning, div.help {
    vertical-align: bottom;
 }
 
+/* use a different color for the errors */
 div.error {
    background: #ffffcc url(../images/error.png) no-repeat 3px 3px;
    padding-left: 22px;

@@ -62,7 +62,7 @@
 ;;
 ;; Routes
 ;; ======
-;; We add auth-login-routes to get the login form, passing it our
+;; We add basic-auth-routes to get the login form, passing it our
 ;; layout, properties and the UserModel. We also create a route
 ;; for the permission-denied page which is where the user will be
 ;; redirected when they attempt to visit a page that they do not have
@@ -73,7 +73,7 @@
   (GET "/member*" [] (layout (member-view)))
   (GET "/admin*" [] (layout (admin-view)))
   (GET "/permission-denied*" [] (layout (permission-denied-view)))
-  (auth-login-routes (fn [r c] (layout c)) properties (UserModel))
+  (basic-auth-routes (fn [r c] (layout c)) properties (UserModel))
   (ANY "*" [] (layout (home-view))))
 
 ;;
