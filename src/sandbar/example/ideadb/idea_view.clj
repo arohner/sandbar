@@ -22,7 +22,7 @@
      (str "Welcome " (current-username)
           "! The table below displays all of the ideas you have submitted.")]))
 
-(defn index [request]
+(defn idea-list [request]
   (let [admin (admin-role? request)]
     (generate-welcome-message request)
     (html

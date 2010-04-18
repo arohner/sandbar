@@ -82,7 +82,7 @@
    GET, POST, PUT and DELETE. If a GET request is /user/edit then it will look
    for a function named edit. If another request method is user it will look
    for edit-post, edit-put, edit-delete."
-  [action-name-fn]
+  [route-adapter]
   (let [ns *ns*]
     (routes
      (ANY "*" request
@@ -94,13 +94,14 @@
             (loop [controller nil
                    action (if-let [a (first path)] a "index")
                    params (rest path)]
-              (let [act-meth (str (action-name-fn controller action)
-                                  action-suffix)]
-                (if-let [ctrl-ns (action-exists? ns controller act-meth)] 
-                  (let [ctrl (ns-resolve (symbol ctrl-ns) (symbol act-meth))]
-                    (ctrl (merge request {:? (query-part request
-                                                         controller
-                                                         action)})))
+              (let [[ctrl act] (route-adapter controller action)
+                    act-meth (str act action-suffix)]
+                (if-let [ctrl-ns (action-exists? ns ctrl act-meth)] 
+                  (let [ctrl-fn (ns-resolve (symbol ctrl-ns)
+                                            (symbol act-meth))]
+                    (ctrl-fn (merge request {:? (query-part request
+                                                            controller
+                                                            action)})))
                   (if controller
                     nil
                     (recur action (first params) (rest params)))))))))))

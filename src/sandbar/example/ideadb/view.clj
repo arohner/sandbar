@@ -27,7 +27,7 @@
     [:div "User : " (current-username)]
     [:div "Role : " (current-user-roles)]
     [:br] [:br]
-    (clink-to "/idea/list" "Idea List")])
+    (clink-to "/ideas" "Idea List")])
 
 (defn admin-menu [request]
   (let [links {"business-unit" "Edit Business Units"
@@ -35,7 +35,7 @@
                "status" "Edit Status List"
                "type" "Edit Types"}]
     [:div
-     [:div (clink-to "/idea/list" "Return to Idea list")]
+     [:div (clink-to "/ideas" "Return to Idea list")]
      [:br]
      [:div (clink-to "/admin/user/list" "Edit Users")]
      [:br]

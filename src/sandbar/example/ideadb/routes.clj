@@ -36,19 +36,22 @@
               (cpath "/admin/list")))
 (def my-list-updater (partial list-updater save delete-by-id))
 
-;; You may want to apply this concept to the controller and the
-;; action. That would allow complete customization of the autorouter.
-(defn action-name-adapter [controller action]
-  (if controller
-    (cond (or (= action "list")
-              (= action "download")) (str controller "-" action)
-          (or (= action "new")
-              (= action "edit")
-              (= action "delete")) (str action "-" controller))
-    action))
+(defn route-adapter
+  "Adapt the routing algorithm to this project."
+  [c a]
+  (if c
+    (cond (or (= a "list") (= a "download"))
+          [c (str c "-" a)] 
+          (or (= a "new")
+              (= a "edit")
+              (= a "delete"))
+          [c (str a "-" c)] )
+    (if (= a "ideas")
+      ["idea" "idea-list"]
+      [c a])))
 
 (defroutes user-module-routes
-  (autorouter action-name-adapter))
+  (autorouter route-adapter))
 
 (defroutes admin-module-routes
   (GET "/admin/list*" request

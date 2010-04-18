@@ -26,7 +26,7 @@
           (user-has-ideas? request))
     (list-layout "Idea List"
                  request
-                 (view/index request))
+                 (view/idea-list request))
     (redirect (cpath "/idea/new"))))
 
 ;; This should be included in the above function. It is the same view
@@ -38,10 +38,33 @@
              "attachment;filename=\"ideadb.csv\""}
    :body (view/download-ideas)})
 
+(defn save-idea-success-fn [action success]
+  (fn [form-data]
+    (do
+      (set-flash-value! :user-message (if (= action "new")
+                                        "Your idea has been successfully
+                                         submitted."
+                                        "The idea has been updated."))
+      success)))
+
+(defn save-idea! [params action]
+  (redirect
+   (let [submit (get params "submit")
+         success (if (= submit "Save and New")
+                   (cpath "/idea/new")
+                   (cpath "/ideas"))]
+     (if (form-cancelled? params)
+       success
+       (let [failure (cpath (str "/idea/" action))]
+         (save-idea params
+                    (save-idea-success-fn action success)
+                    (store-errors-and-redirect :idea failure)))))))
+
 (defn new-idea [request]
   (form-layout "New Idea Form"
                request
                (view/new-idea-form request)))
+
 
 (defn new-idea-post [{params :params}]
   (save-idea! params "new"))

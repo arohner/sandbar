@@ -6,9 +6,9 @@
 ; the terms of this license.
 ; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.example.ideadb.test-user-module
-  (:use [clojure.test]
-        [sandbar.example.ideadb.user-module]
+(ns sandbar.example.ideadb.test-idea-model
+  (:use (clojure test)
+        (sandbar.example.ideadb idea-model)
         (sandbar auth)
         (sandbar.dev util
                      [test :only (t)])))

@@ -16,10 +16,6 @@
         (sandbar.dev tables forms html util validation)
         (sandbar.example.ideadb properties model)))
 
-;; This need to be cleaned up. The model should not even know it is
-;; running in a web application. Move any web specific code to the
-;; view or controller.
-
 (def idea-table-columns
      [{:column :id :actions #{:sort}}
       :name
@@ -31,18 +27,6 @@
       {:column :idea_type :actions #{:sort :filter}} 
       {:column :business_unit :actions #{:sort :filter}} 
       {:column :status :actions #{:sort :filter}}])
-
-(defn idea-table-records-function [request]
-  (if (admin-role? request)
-    filter-and-sort-records
-    (fn [type filters sort-and-page]
-      (filter-and-sort-records type
-                               (merge filters
-                                      {:user_id (current-username)})
-                               sort-and-page))))
-
-(defn user-has-ideas? [request]
-  (< 0 (count ((idea-table-records-function request) :idea {} {}))))
 
 (defn create-idea-from-params [params]
   (let [idea
@@ -62,6 +46,18 @@
                  (assoc :type :idea))]
     (clean-form-input idea)))
 
+(defn idea-table-records-function [request]
+  (if (admin-role? request)
+    filter-and-sort-records
+    (fn [type filters sort-and-page]
+      (filter-and-sort-records type
+                               (merge filters
+                                      {:user_id (current-username)})
+                               sort-and-page))))
+
+(defn user-has-ideas? [request]
+  (< 0 (count ((idea-table-records-function request) :idea {} {}))))
+
 (def idea-validator
      (build-validator (non-empty-string :description
                                         "Please enter a description.")
@@ -69,26 +65,21 @@
                                         "Please enter a name.")
                       (non-empty-string :customer_need
                                         "Please enter a customer need.")))
-(defn validation-success-fn [action success]
-  (fn [form-data]
-    (do
-      (save form-data)
-      (set-flash-value! :user-message (if (= action "new")
-                                        "Your idea has been successfully
-                                         submitted."
-                                        "The idea has been updated."))
-      success)))
 
-(defn save-idea! [params action]
-  (redirect
-   (let [submit (get params "submit")
-         success (if (= submit "Save and New")
-                   (cpath "/idea/new")
-                   (cpath "/idea/list"))]
-     (if (form-cancelled? params)
-       success
-       (let [form-data (create-idea-from-params params)
-             failure (cpath (str "/idea/" action))]
-         (if-valid idea-validator form-data
-                   (validation-success-fn action success)
-                   (store-errors-and-redirect :idea failure)))))))
+(defn save-idea
+  "Given an idea or parameters from which an idea can be created, save the
+   idea. The single argument version will return nil if the idea is valid
+   and saved and return errors if it does not pass validation. You may also
+   pass functions to be run on success and failure."
+  ([idea] (save-idea (fn [i] nil) (fn [i e] e)))
+  ([idea on-success on-failure]
+     (if-valid idea-validator
+               (if (contains? idea :type)
+                 idea
+                 (create-idea-from-params idea))
+               (fn [i]
+                 (do
+                   (save i)
+                   (on-success i)))
+               on-failure)))
+
