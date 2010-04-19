@@ -20,8 +20,7 @@
          [layouts :only (main-layout)])))
 
 (defroutes development-routes
-  user-module-routes
-  admin-module-routes
+  ideadb-routes
   (ANY "*" request (main-layout "404" request (page-not-found-404))))
 
 (def security-config
