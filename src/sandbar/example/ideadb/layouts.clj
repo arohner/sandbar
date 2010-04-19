@@ -14,7 +14,7 @@
                               any-role-granted?)]
                  stateful-session)
         (sandbar.dev html)
-        [sandbar.example.ideadb.model]))
+        (sandbar.example.ideadb data)))
 
 (defn base-layout [title header request & body]
   (html

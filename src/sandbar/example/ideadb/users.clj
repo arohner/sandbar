@@ -6,9 +6,9 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.example.ideadb.user-model
+(ns sandbar.example.ideadb.users
   (:use (sandbar.dev forms html util userui)
-        (sandbar.example.ideadb model
+        (sandbar.example.ideadb data
                                 properties)))
 
 (defn user-data-functions [k]

@@ -16,13 +16,13 @@
 (defn get-controller-ns
   "Given a root-ns, generate the name of the controller namespace. Controller
    namespaces are located relative to the root-ns on the classpath."
-  ([root-ns] (get-controller-ns root-ns "default"))
+  ([root-ns] (get-controller-ns root-ns "control"))
   ([root-ns controller]
      (let [parts (re-split #"[.]" (str root-ns))
-           ctrl (str ".control." controller)]
-    (str (apply str
-                (interpose "." (take (- (count parts) 1) parts)))
-         ctrl))))
+           ctrl (str "." controller)]
+       (str (apply str
+                   (interpose "." (take (- (count parts) 1) parts)))
+            ctrl))))
 
 (defn load-namespace
   "Require a namespace and return true if it is found. Return false if not."

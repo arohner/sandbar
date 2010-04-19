@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns sandbar.example.ideadb.model
+(ns sandbar.example.ideadb.data
   (:use [clojure.contrib.str-utils :only (re-split re-partition)]
         (sandbar [auth :only (current-user
                               ensure-any-role-if

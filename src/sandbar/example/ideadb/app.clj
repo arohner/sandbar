@@ -16,7 +16,7 @@
         (sandbar.dev [standard-pages :only (page-not-found-404)]
                      [basic-authentication :only (basic-auth)])
         (sandbar.example.ideadb
-         routes
+         control
          [layouts :only (main-layout)])))
 
 (defroutes development-routes
