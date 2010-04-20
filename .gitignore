@@ -1,5 +1,6 @@
 # ignore temp files
 *.clj~
+pom.xml
 
 # ignore output
 out/
