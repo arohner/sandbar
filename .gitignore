@@ -1,6 +1,7 @@
 # ignore temp files
 *.clj~
 pom.xml
+.DS_Store
 
 # ignore output
 out/
