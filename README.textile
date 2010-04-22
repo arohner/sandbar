@@ -94,8 +94,6 @@ password: password
 
 Log in with one of these accounts and take it for a spin. The next step would be to take a look at the code and tinker with it in your development environment of choice. Start with <code>example.ideadb.app</code>.
 
-When you are finished, you may shutdown the server and the REPL by typing <code>(exit)</code> at the REPL prompt.
-
 h2. License
 
 Copyright (C) 2010 Brenton Ashworth
