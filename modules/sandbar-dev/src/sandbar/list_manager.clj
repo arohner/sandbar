@@ -55,9 +55,12 @@
                             :size 65} :required)]
           request)]))))
 
+(defn get-action [request]
+  (get (:route-params request) "*"))
+
 (defn list-editor [adapter finished request]
   (let [params (:params request)
-        action (params :*)]
+        action (get-action request)]
     (cond (.startsWith action "/list")
           (list-editor-display-list adapter finished)
           (.startsWith action "/add")
@@ -77,8 +80,9 @@
                  "list")
             (store-errors-and-redirect (:id adapter) action)))
 
-(defn list-updater [adapter params]
-  (let [action (params :*)]
+(defn list-updater [adapter request]
+  (let [params (:params request)
+        action (get-action request)]
     (redirect
      (cond (form-cancelled? params) "list"
            (.startsWith action "/add")
@@ -112,5 +116,5 @@
         (layout request
                 (list-editor adapter finished request)))
    (POST (str prefix "/" (urify-keyword (:id adapter)) "*")
-         {params :params}
-         (list-updater adapter params))))
+         request
+         (list-updater adapter request))))

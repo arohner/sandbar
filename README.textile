@@ -15,7 +15,7 @@ The project contains the library code as well as a reference application which u
 
 h2. Features
 
-As of version 0.2.* there are two completed features:
+The current version of Sandbar contains two completed features: 
 
 * Stateful sessions
 * Authorization and authentication
@@ -24,7 +24,7 @@ Documentation for completed features is located in the <a href="http://wiki.gith
 
 By completed, I mean that they have taken the final form that they will have in version 1.0.0. There is still much work to be done to test them and to make them more robust.
 
-h2. Using sandbar in your project
+h2. Using Sandbar in your project
 
 If you would like to use Sandbar in your project then you may use the currently available 0.2.3 release that is on Clojars.
 
@@ -77,7 +77,7 @@ $ git branch --track stable origin/stable
 $ git checkout stable
 $ cd examples
 $ lein deps
-$ ./bin/repl.sh
+$ lein repl
 $ (load-file "src/testdrive.clj")
 </code>
 </pre>
