@@ -1,4 +1,4 @@
-The code for authentication and authorization is located in the namespace <code>sandbar.auth</code>. For an example of how it may be used, see <code>sandbar.example.auth-demo</code> and <code>sandbar.example.ideadb.app</code>.
+The code for authentication and authorization is located in the namespace <code>sandbar.auth</code>. For an example of how it may be used, see <code>example.auth-demo</code>, <code>example.basic-auth-demo</code> and <code>example.ideadb.app</code>.
 
 h3. Configuration
 

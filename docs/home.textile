@@ -1,18 +1,34 @@
-Sandbar is a library for web applications that is meant to be used with Ring and Compojure.
+Sandbar is a set of small libraries for web applications which is meant to be used with Ring and Compojure.
 
 It is a component oriented library with the goal of allowing developers to get significant amounts of work done with the fewest lines of code. It aims to do this without telling you how to work. It is not a framework. Because of this, you may easily use only the parts of Sandbar that you need.
 
-The first release of this library is version 0.2.* which includes code to help with managing stateful sessions and authentication and authorization. I will add documentation to this wiki for all of the completed features.
+The current release of this library includes code to help with managing stateful sessions and authentication and authorization. I will add documentation to this wiki for all of the completed features.
+
+You may include individual libraries in your Leiningen project by adding some of the following to your <code>:dependencies</code>
+
+<pre>
+<code>
+[sandbar/sandbar-core "0.3.0"]
+[sandbar/sandbar-session "0.2.3"]
+[sandbar/sandbar-auth "0.2.3"]
+</code>
+</pre>
+
+Or to include everything use:
+
+<pre>
+<code>
+[sandbar/sandbar "0.2.3"]
+</code>
+</pre>
+
+Be warned that if you get all of Sandbar then you will get the <code>sandbar-dev</code> project which contains code that is pre-alpha and may not work.
 
 h3. Note about version numbers
 
-I plan to use <a href="http://semver.org/">Semantic Versioning</a> but this will only apply to non-development code. If you are using anything that has a namespace that begins with <code>sandbar.dev</code> then be warned, this can change in any way at any time. 
+I plan to use <a href="http://semver.org/">Semantic Versioning</a> but this will only apply to non-development code. During development I will live by the following rules.  While in major version 0 the API is not stable. I will use the minor version number to indicate that new features have been added and the patch version to indicate that a fix has been applied. Any time the minor version number changes it will be assumed that it is potentially not backwards compatible. Once we get to major version 1 we will start using full-on Semantic Versioning. The version number of the <code>sandbar-dev</code> project will always be <code>0.0.1-SNAPSHOT</code> to indicate that it is always changing and may not even work.
 
-There will always be at least three branches of the project: stable, master and dev. Stable will contain the current released version that has been pushed to Clojars. Master will contain newer versions with features that should are completed and should work but are not considered to be stable or ready for release. Dev is where I do my daily work.
-
-h3. The sandar.dev namespaces
-
-All the code in a namespace that begins with sandbar.dev is very pre-alpha. I will be using this code in my own projects and you may use it as well but be warned, it will change significantly with every release.
+There will always be at least three branches of the project: stable, master and dev. Stable will contain the current released version that has been pushed to Clojars. Master will contain newer versions with features that are completed and should work but are not considered to be stable or ready for release. Dev is where I do my daily work.
 
 h2. Current features
 

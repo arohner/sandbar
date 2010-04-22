@@ -1,6 +1,6 @@
 h1. Sandbar
 
-Sandbar is a library for web applications which is designed to be used with "Compojure":http://github.com/weavejester/compojure and/or "Ring":http://github.com/mmcgrana/ring. It is a work in progress. The following features will be implemented in order.
+Sandbar is a set of small libraries for web applications which is designed to be used with "Compojure":http://github.com/weavejester/compojure and/or "Ring":http://github.com/mmcgrana/ring. It is a work in progress. The following features will be implemented in order.
 
 * Stateful session management
 * Authorization and authentication
@@ -8,7 +8,6 @@ Sandbar is a library for web applications which is designed to be used with "Com
 * Basic (form based) authentication
 * Tables which may be filtered, sorted and paged
 * User management
-* CSS builder
 
 The name "sandbar" is a surfing reference. A sandbar creates waves which may be surfed. Sandbar creates web sites which may be surfed. Sandbars are always in a state of change. So is this project.
 
@@ -27,15 +26,28 @@ By completed, I mean that they have taken the final form that they will have in 
 
 h2. Using sandbar in your project
 
-If you would like to use Sandbar in your project then you may use the currently available 0.2.1 release that is on Clojars.
+If you would like to use Sandbar in your project then you may use the currently available 0.2.3 release that is on Clojars.
 
-To include Sandbar in your Leiningen project, add the following to your <code>:dependencies</code>
+To include all Sandbar libraries in your Leiningen project, add the following to your <code>:dependencies</code>
 
 <pre>
 <code>
-[sandbar/sandbar "0.2.1"]
+[sandbar/sandbar "0.2.3"]
 </code>
 </pre>
+
+If you would like to use only the individual libraries then you may use:
+
+<pre>
+<code>
+[sandbar/sandbar-core "0.3.0"]
+[sandbar/sandbar-session "0.2.3"]
+[sandbar/sandbar-auth "0.2.3"]
+[sandbar/sandbar-dev "0.0.1-SNAPSHOT"]
+</code>
+</pre>
+
+Please not that the code in sandbar-dev is very pre-alpha. It will change often and may not work.
 
 h2. Running the reference application
 
@@ -51,6 +63,7 @@ To run the reference application, follow these steps:
 $ mysql -u root -p 
 $ CREATE DATABASE idea_db;
 $ GRANT ALL PRIVILEGES ON idea_db.* TO idea_user@localhost IDENTIFIED BY '123456789';
+$ exit
 </code>
 </pre>
 
@@ -62,9 +75,8 @@ $ git clone git://github.com/brentonashworth/sandbar.git
 $ cd sandbar
 $ git branch --track stable origin/stable
 $ git checkout stable
+$ cd examples
 $ lein deps
-$ lein test
-$ chmod +x ./bin/repl.sh
 $ ./bin/repl.sh
 $ (load-file "src/testdrive.clj")
 </code>
@@ -80,7 +92,7 @@ password: admin
 username: normal-user
 password: password
 
-Log in with one of these accounts and take it for a spin. The next step would be to take a look at the code and tinker with it in your development environment of choice. Start with <code>sandbar.example.ideadb.app</code>.
+Log in with one of these accounts and take it for a spin. The next step would be to take a look at the code and tinker with it in your development environment of choice. Start with <code>example.ideadb.app</code>.
 
 When you are finished, you may shutdown the server and the REPL by typing <code>(exit)</code> at the REPL prompt.
 

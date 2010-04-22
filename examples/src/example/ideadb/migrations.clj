@@ -9,7 +9,7 @@
 (ns example.ideadb.migrations
   (:require [sandbar.database :as database])
   (:use (clojure.contrib [seq-utils :only (flatten)])
-        (example.ideadb [model :only (get-connection-info)])))
+        (example.ideadb [data :only (get-connection-info)])))
 
 ;; TODO - Add library support and update this file so that you can
 ;; easily add new migration functions when the database changes.

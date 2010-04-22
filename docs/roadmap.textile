@@ -1,8 +1,5 @@
-For now, I would like to keep everything in one project to ease implementation, but in the future I may break each piece out into a separate library.
 
-h2. Release 0.2.*
-
-This release contains code to help with stateful session management and authentication and authorization.
+The current release contains code to help with stateful session management and authentication and authorization.
 
 h2. Planned features for version 1.0.0
 
@@ -26,7 +23,4 @@ h3. User management
 
 Every application that I create needs some kind of user management GUI. The goal here is to package this up into a library that I can include and configure and never have to worry about again. This is partially implemented.
 
-h3. CSS Builder
-
-Working with CSS on a large project always gets out of control. I want to be able to write my CSS as Clojure code like "hiccup":http://github.com/weavejester/hiccup does for html. This currently does not exist.
 

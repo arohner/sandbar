@@ -9,9 +9,9 @@
 (ns testdrive
   "Provide an easy way for developers to setup and run the reference
    application."
-  (:require [sandbar.example.ideadb.config :as ideadb-config]
-            [sandbar.dev.user-tables-mysql :as user-config]
-            [sandbar.dev.database :as database]))
+  (:require [example.ideadb.migrations :as ideadb-config]
+            [sandbar.user-tables-mysql :as user-config]
+            [sandbar.database :as database]))
 
 (def testdrive-db (user-config/get-connection))
 
@@ -25,6 +25,5 @@
       (do (println "User tables do not exist. Creating them now.")
         (user-config/create-tables))))
 
-(use 'sandbar.example.ideadb.app)
-
-
+(use 'example.ideadb.app)
+(run)

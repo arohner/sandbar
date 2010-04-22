@@ -32,7 +32,7 @@ There is currently also a very simplistic implementation of flash support in the
 
 h3. Example
 
-Please see the example code for working examples of how to use stateful sessions. First, have a look at <code>sandbar.example.session-demo</code> which shows a very simple example. For more complex examples, see the authentication demos and the ideadb reference application.
+Please see the example code for working examples of how to use stateful sessions. First, have a look at <code>example.session-demo</code> which shows a very simple example. For more complex examples, see the authentication demos and the ideadb reference application.
 
 h3. Limitations
 
