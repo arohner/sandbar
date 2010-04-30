@@ -1,4 +1,4 @@
-(defproject sandbar/sandbar-core "0.3.0"
+(defproject sandbar/sandbar-core "0.3.1"
   :description "Core library for sandbar project."
   :dependencies [[org.clojure/clojure "1.1.0"]
                  [org.clojure/clojure-contrib "1.1.0"]

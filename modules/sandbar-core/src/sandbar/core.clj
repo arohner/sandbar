@@ -14,6 +14,12 @@
 (defn set-app-context! [context]
   (swap! app-context (fn [a b] b) context))
 
+;; configure the location of resources
+(def resource-url-prefix (atom ""))
+
+(defn set-resource-url-prefix! [prefix]
+  (swap! resource-url-prefix (fn [a b] b) prefix))
+
 (defn cpath [path]
   (if (.startsWith path "/")
     (str @app-context path)
@@ -51,25 +57,33 @@
   (k p (name k)))
 
 ;; Resource locations under /public
-(def css-path "/css/")
-(def image-path "/images/")
-(def js-path "/js/")
+(defn resource-path [s]
+  (if (empty? @resource-url-prefix)
+    (cpath s)
+    (str @resource-url-prefix s)))
+
+(defn css-path []
+  (resource-path "/css/"))
+(defn image-path []
+  (resource-path "/images/"))
+(defn js-path []
+  (resource-path "/js/"))
 
 (defn stylesheet [name]
-  (include-css (cpath (str css-path name))))
+  (include-css (str (css-path) name)))
 
 (defn javascript [name]
-  (include-js (cpath (str js-path name))))
+  (include-js (str (js-path) name)))
 
 (defn icon [name]
-  [:link {:rel "icon" :type "image/png" :href (cpath (str image-path name))}])
+  [:link {:rel "icon" :type "image/png" :href (str (image-path) name)}])
 
 (defn image
   ([name] (image name {:alt name}))
   ([name attrs] 
-    [:img (merge {:src (cpath (str image-path name)) :border "0"} attrs)]) 
+    [:img (merge {:src (str (image-path) name) :border "0"} attrs)]) 
   ([name mouseover attrs]
-     (let [c-path (cpath image-path)]
+     (let [c-path (image-path)]
        [:img (merge {:src (str c-path name) :border "0" 
            :onmouseout (str "this.src='" c-path name "'") 
            :onmouseover (str "this.src='" c-path mouseover "'")} attrs)])))

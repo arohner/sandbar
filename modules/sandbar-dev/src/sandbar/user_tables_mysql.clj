@@ -91,6 +91,7 @@
   (insert-fn :user_role {:user_id 1 :role_id 1})
   (insert-fn :user_role {:user_id 2 :role_id 2}))
 
+;; TODO - You should be able to pass a configuration to this function
 (defn create-tables
   ([] (create-tables nil))
   ([drop]
