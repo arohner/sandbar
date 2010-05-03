@@ -32,7 +32,7 @@ To include all Sandbar libraries in your Leiningen project, add the following to
 
 <pre>
 <code>
-[sandbar/sandbar "0.2.3"]
+[sandbar/sandbar "0.2.4"]
 </code>
 </pre>
 
@@ -40,7 +40,7 @@ If you would like to use only the individual libraries then you may use:
 
 <pre>
 <code>
-[sandbar/sandbar-core "0.3.0"]
+[sandbar/sandbar-core "0.3.1"]
 [sandbar/sandbar-session "0.2.3"]
 [sandbar/sandbar-auth "0.2.3"]
 [sandbar/sandbar-dev "0.0.1-SNAPSHOT"]
