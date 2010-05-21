@@ -36,13 +36,16 @@
 (deftest test-replace-wildcard
   (is (= (replace-wildcard "Something*") "Something%")))
 
+(def model-fixture
+     (model
+      (relation :quick_category [:id :name])
+      (relation :quick_page [:id :name :context :current_version
+                             :publish_date]
+                [:has-many :categories :quick_category :name
+                 :through :quick_page_category :page_id :category_id])))
+
 (deftest test-model
-  (is (= (model
-          (relation :quick_category [:id :name])
-          (relation :quick_page [:id :name :context :current_version
-                                 :publish_date]
-                    [:has-many :quick_category :categories :name
-                     :through :quick_page_category :page_id :category_id]))
+  (is (= model-fixture
          {:model
           {:quick_category {:attrs [:id :name]
                             :alias :categories
@@ -54,14 +57,6 @@
                                                 :link :quick_page_category
                                                 :from :page_id
                                                 :to :category_id}]}}}})))
-
-(def model-fixture
-     (model
-      (relation :quick_category [:id :name])
-      (relation :quick_page [:id :name :context :current_version
-                             :publish_date]
-                [:has-many :quick_category :categories :name
-                 :through :quick_page_category :page_id :category_id])))
 
 (def many-to-many-join-query
      "SELECT quick_page.id as quick_page_id, quick_page.name as quick_page_name, quick_page.context as quick_page_context, quick_page.current_version as quick_page_current_version, quick_page.publish_date as quick_page_publish_date, quick_category.id as quick_category_id, quick_category.name as quick_category_name FROM quick_page LEFT JOIN quick_page_category ON quick_page.id = quick_page_category.page_id LEFT JOIN quick_category ON quick_page_category.category_id = quick_category.id")
@@ -139,6 +134,8 @@
        {:id 10 :name "Some"}))
 
 (deftest test-transform-join-results
-  (is (= (transform-join-results :quick_page model-fixture sample-join-from)
+  (is (= (transform-join-results :quick_page
+                                 (:model model-fixture)
+                                 sample-join-from)
          sample-join-to)))
 
