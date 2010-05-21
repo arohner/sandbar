@@ -209,15 +209,22 @@
   [:div {:class "group"}
      (map #(vector :div {:class "group-checkbox"} %) coll)])
 
-(defn form-multi-checkbox [props fname coll value-fn]
-  {fname
-   [[:span {:class "group-title"} (property-lookup props fname)]
-    (wrap-checkboxes-in-group (map
-                               #(let [value (value-fn %)]
-                                  [:input
-                                   {:type "checkbox" :name fname :value value}
-                                   (property-lookup props (keyword value))])
-                               coll))]})
+(defn form-multi-checkbox
+  ([props many-spec]
+     (form-multi-checkbox props
+                          (:alias many-spec)
+                          ((:all-items many-spec))
+                          (:name-fn many-spec)))
+  ([props fname coll value-fn]
+     {fname
+      [[:span {:class "group-title"} (property-lookup props fname)]
+       (wrap-checkboxes-in-group
+        (map
+         #(let [value (value-fn %)]
+            [:input
+             {:type "checkbox" :name fname :value value}
+             (property-lookup props (keyword value))])
+         coll))]}))
 
 (defn get-multi-checkbox
   "Add the key k to the map m where the value of k is is a vector of
@@ -302,7 +309,8 @@
         checkboxes (map last (last (last input-field)))
         field-name (:name (second (first checkboxes)))
         field-value (field-name (:form-data form-state))
-        value-set (set (if (string? field-value) [field-value] field-value))
+        value-set (set (cond (string? field-value) [field-value]
+                             :else field-value))
         new-checkboxes (map #(vector :input
                                      (let [attrs (second %)]
                                        (if (contains? value-set

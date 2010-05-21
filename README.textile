@@ -26,7 +26,7 @@ By completed, I mean that they have taken the final form that they will have in 
 
 h2. Using Sandbar in your project
 
-If you would like to use Sandbar in your project then you may use the currently available 0.2.3 release that is on Clojars.
+If you would like to use Sandbar in your project then you may use the currently available 0.2.4 release that is on Clojars.
 
 To include all Sandbar libraries in your Leiningen project, add the following to your <code>:dependencies</code>
 
