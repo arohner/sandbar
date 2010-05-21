@@ -13,6 +13,12 @@
 	                 [str-utils :only (re-gsub)]
                          [map-utils :only (deep-merge-with)])))
 
+(defprotocol KeyValueStore
+  "Key/Value abstraction"
+  (put-value [this key val] "Save a new value under this key or update an
+                             existing value.")
+  (get-value [this key] "Return the value for this key."))
+
 ;; Begin define relationships
 
 (defn model [& body]
