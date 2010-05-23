@@ -21,27 +21,39 @@
 
 ;; Begin define relationships
 
+(defn set-merge [& body]
+  (if (set? (first body))
+    (do
+      (set (apply concat body)))
+    (apply merge body)))
+
 (defn model [& body]
-  {:model (apply deep-merge-with merge body)})
+  {:model (apply deep-merge-with set-merge body)})
 
 (defn compile-has-many [relation coll]
-  (cond (= (count coll) 8)
-        (let [[_ alias many-relation name _ link from to] coll]
-          {many-relation {:alias alias
-                          :name-fn name}
-           relation {:joins
-                     {:many-to-many [{:relation many-relation
-                                      :alias alias
-                                      :link link
-                                      :from from
-                                      :to to}]}}})))
+  (cond (= (count coll) 7)
+        (let [[_ alias many-relation _ link from to] coll]
+          {many-relation {:alias alias}
+           relation {:joins #{{:type :many-to-many
+                               :relation many-relation
+                               :alias alias
+                               :link link
+                               :from from
+                               :to to}}}})
+        (= (count coll) 4)
+        (let [[_ alias many-relation link] coll]
+          {many-relation {:alias alias}
+           relation {:joins #{{:type :one-to-many
+                               :relation many-relation
+                               :alias alias
+                               :link link}}}})))
 
 (defn relation [name & attrs]
   (loop [result {name
                  {:attrs (first attrs)}}
          attrs (rest attrs)]
     (if (seq attrs)
-      (recur (deep-merge-with merge
+      (recur (deep-merge-with set-merge
                               result
                               (let [next (first attrs)]
                                 (cond (= (first next) :has-many)
@@ -138,55 +150,79 @@
     (let [attrs (-> model relation :attrs)]
       (loop [result (create-relation-qualified-names relation
                                                      attrs)
-             many-to-many (-> model relation :joins :many-to-many)]
-        (if (seq many-to-many)
-          (let [many-side (:relation (first many-to-many))
+             joins (-> model relation :joins)]
+        (if (seq joins)
+          (let [{type :type many-side :relation} (first joins)
                 attrs (-> model many-side :attrs)]
             (recur (concat result (create-relation-qualified-names many-side
                                                                    attrs))
-                   (rest many-to-many)))
+                   (rest joins)))
           (apply str " " (interpose ", " result)))))
     " *"))
 
+(defn many-to-many? [join]
+  (= (:type join) :many-to-many))
+
+(defn one-to-many? [join]
+  (= (:type join) :one-to-many))
+
+(defn create-many-to-many-join [base-rel result join]
+  (let [{rel :relation link :link from :from to :to} join]
+    (let [rel (name rel)
+          link (name link)
+          from (name from)
+          to (name to)]
+      (str result
+           " LEFT JOIN " link " ON " (name base-rel) ".id = " link "." from
+           " LEFT JOIN " rel " ON " link "." to " = " rel ".id"))))
+
+(defn create-one-to-many-join [base-rel result join]
+  (let [{rel :relation link :link} join]
+    (let [rel (name rel)
+          link (name link)]
+      (str result
+           " LEFT JOIN " rel " ON " (name base-rel) ".id = " rel "." link))))
+
 (defn create-joins [relation model]
   (loop [result ""
-         many-to-many (-> model relation :joins :many-to-many)]
-    (if (seq many-to-many)
-      (let [{rel :relation link :link from :from to :to} (first many-to-many)]
+         joins (-> model relation :joins)]
+    (if (seq joins)
+      (let [join (first joins)]
         (recur
-         (let [rel (name rel)
-               link (name link)
-               from (name from)
-               to (name to)]
-           (str result
-                " LEFT JOIN " link " ON " (name relation) ".id = " link "." from
-                " LEFT JOIN " rel " ON " link "." to " = " rel ".id"))
-         (rest many-to-many))) 
+         (cond (many-to-many? join)
+               (create-many-to-many-join relation result join)
+               (one-to-many? join)
+               (create-one-to-many-join relation result join)
+               :else "")
+         (rest joins))) 
       result)))
 
-(defmulti create-select (fn [conn _ _ _] (:subprotocol conn)))
+(defn subprotocol-dispatch [conn _ _ _]
+  (:subprotocol conn))
 
-(defn create-select-mysql
+(defmulti create-selects subprotocol-dispatch)
+
+(defn create-selects-mysql
   "Create the select vector that can be passed to with-query-results"
   [conn relation criteria params]
-  (let [model (:model params)
-        select-part (str "SELECT" (create-attr-list relation model)
-                         " FROM " (as-str relation)
-                         (create-joins relation model))
-        where-part (create-where-vec relation criteria)
-        order-by-part (create-order-by params)]
-    (if where-part
-      (vec (cons (str select-part " WHERE " (first where-part) order-by-part)
-                 (rest where-part)))
-      [(str select-part order-by-part)])))
+  [(let [model (:model params)
+         select-part (str "SELECT" (create-attr-list relation model)
+                          " FROM " (as-str relation)
+                          (create-joins relation model))
+         where-part (create-where-vec relation criteria)
+         order-by-part (create-order-by params)]
+     (if where-part
+       (vec (cons (str select-part " WHERE " (first where-part) order-by-part)
+                  (rest where-part)))
+       [(str select-part order-by-part)]))])
 
-(defmethod create-select "mysql"
+(defmethod create-selects "mysql"
   [conn relation criteria params]
-  (create-select-mysql conn relation criteria params))
+  (create-selects-mysql conn relation criteria params))
 
-(defmethod create-select :default
+(defmethod create-selects :default
   [conn relation criteria params]
-  (create-select-mysql conn relation criteria params))
+  (create-selects-mysql conn relation criteria params))
 
 (defn db-drop-table [db name]
   (sql/with-connection (:connection db)
@@ -213,11 +249,15 @@
 (defn dequalify-joined-map
   "Create a map that has dequalified key names for this relation. The input
    map will have the relation named appended to the front of each key."
-  [relation m]
-  (let [prefix (name relation)]
+  [model relation m]
+  (let [prefix (name relation)
+        other-relations (->> (map name (keys model))
+                             (filter #(> (count %) (count prefix))))]
     (reduce (fn [a b]
               (let [k (name (key b))]
-                (if (.startsWith k prefix)
+                (if (and (.startsWith k prefix)
+                         (not (some true? (map #(.startsWith k %)
+                                               other-relations))))
                   (assoc a (keyword
                             (.substring k (+ 1 (count prefix)))) (val b))
                   a)))
@@ -227,44 +267,47 @@
 (defn merge-many
   "Create a map from the many side of the association and add it to the
    collection contained in the one side."
-  [relation sub-relation alias result-map next-result]
-  (let [sub (dequalify-joined-map sub-relation next-result)
+  [model relation sub-relation alias result-map next-result]
+  (let [sub (dequalify-joined-map model sub-relation next-result)
         id ((keyword (str (name relation) "_id")) next-result)
         host (get result-map id)]
     (assoc result-map id
            (if (:id sub)
              (merge-with #(vec (concat %1 %2)) host
-                         {alias [(assoc sub :type sub-relation)]})
+                         {alias [(assoc sub ::type sub-relation)]})
              (assoc host alias [])))))
 
-(defn create-order-and-results-map
+(defn order-and-result-map
   "In one pass through the results, create a vector containing the order of
    the results by id and a map with the unique results for this relation."
-  [relation results]
+  [model relation results]
   (reduce
    (fn [a b]
-     (let [m (dequalify-joined-map relation b)]
+     (let [m (dequalify-joined-map model relation b)]
        [(conj (first a) (:id m))
         (assoc (last a) (:id m) m)]))
    [[] {}]
    results))
 
-(defn transform-join-results
-  "Transform flat join results into a hierarchy of maps."
-  [relation model results]
-  (let [[order rec-map] (create-order-and-results-map relation results)]
-    (loop [many-to-many (-> model relation :joins :many-to-many)
-           rec-map rec-map]
-      (if (seq many-to-many)
-        (let [next (first many-to-many)
-              sub-relation (:relation next)
-              alias (:alias next)]
-          (recur
-           (rest many-to-many)
-           (reduce (partial merge-many relation sub-relation alias)
-                   rec-map
-                   results)))
-        (vec (map #(get rec-map %) (distinct order)))))))
+(defmulti transform-query-plan-results subprotocol-dispatch)
+
+(defmethod transform-query-plan-results "mysql"
+  [conn relation model results]
+  (map #(assoc % ::type relation)
+       (if model
+         (let [results (first results)
+               [order rec-map] (order-and-result-map model relation results)]
+           (loop [joins (-> model relation :joins)
+                  rec-map rec-map]
+             (if (seq joins)
+               (let [{sub-relation :relation alias :alias} (first joins)]
+                 (recur
+                  (rest joins)
+                  (reduce (partial merge-many model relation sub-relation alias)
+                          rec-map
+                          results)))
+               (vec (map #(get rec-map %) (distinct order))))))
+         (first results))))
 
 (defn raw-sql
   "Run a query using raw sql of the form
@@ -275,23 +318,32 @@
       sql
       (into [] res))))
 
+(defn execute-selects [conn relation params selects]
+  (sql/with-connection conn
+    (reduce (fn [results next-select]
+              (sql/with-query-results res
+                next-select
+                (conj results (into [] res))))
+            []
+            selects)))
+
+(defn execute-query-plan [conn relation criteria params]
+  (->> (create-selects conn relation criteria params)
+       (execute-selects conn relation (:model params))
+       (transform-query-plan-results conn relation (:model params))))
+
+;; TODO put type information in the metadata for each map.
+;; Maybe also store the original version of the record so that you can
+;; check later to see if it has been modified.
 (defn query
   "Find records in a table based on the passed criteria"
-  ([db name-or-sql]
-     (if (keyword? name-or-sql)
-       (query db name-or-sql {} {})
-       (raw-sql db name-or-sql)))
-  ([db name criteria] (query db name criteria {}))
-  ([db name criteria params]
-     (let [conn (:connection db)]
-       (sql/with-connection conn
-         (sql/with-query-results res
-           (create-select conn name criteria params)
-           (map #(assoc % :type name)
-                (let [results (into [] res)]
-                  (if-let [model (:model params)] 
-                    (transform-join-results name model results)
-                    results))))))))
+  ([db relation-or-sql]
+     (if (keyword? relation-or-sql)
+       (query db relation-or-sql {} {})
+       (raw-sql db relation-or-sql)))
+  ([db relation criteria] (query db relation criteria {}))
+  ([db relation criteria params]
+     (execute-query-plan (:connection db) relation criteria params)))
 
 (defn delete-record [db table rec]
   (with-transaction db 
@@ -299,11 +351,10 @@
        (vec (create-where-vec {:id (:id rec)})))))
 							
 (defn save-or-update [db record]
-  (let [table (:type record)]
+  (let [table (keyword (name (::type record)))]
     (if (:id record)
-      (db-update db table (:id record) (m-dissoc record :id :type))
-      (db-insert db table (m-dissoc record :type)))))
-
+      (db-update db table (:id record) (m-dissoc record :id ::type))
+      (db-insert db table (m-dissoc record ::type)))))
 
 (comment
 
