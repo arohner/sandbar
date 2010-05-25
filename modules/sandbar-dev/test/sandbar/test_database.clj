@@ -55,6 +55,20 @@
                  :through :page_category :page_id :category_id]
                 [:has-many :versions :version :page_id])))
 
+(def fixture-join-category
+     {:type :many-to-many
+      :relation :category
+      :alias :categories
+      :link :page_category
+      :from :page_id
+      :to :category_id})
+
+(def fixture-join-version
+     {:type :one-to-many
+      :relation :version
+      :alias :versions
+      :link :page_id})
+
 (deftest test-model
   (t "test creating a model"
      (t "containing a many-to-many relationship"
@@ -63,22 +77,14 @@
                 {:category {:attrs [:id :name]
                             :alias :categories}
                  :page {:attrs [:id :name :current_version]
-                        :joins #{{:type :many-to-many
-                                  :relation :category
-                                  :alias :categories
-                                  :link :page_category
-                                  :from :page_id
-                                  :to :category_id}}}}})))
+                        :joins #{fixture-join-category}}}})))
      (t "containing a one-to-many relationship"
         (is (= model-fixture-one-to-many
                {:model
                 {:version {:attrs [:id :content]
                            :alias :versions}
                  :page {:attrs [:id :name :current_version]
-                        :joins #{{:type :one-to-many
-                                  :relation :version
-                                  :alias :versions
-                                  :link :page_id}}}}})))
+                        :joins #{fixture-join-version}}}})))
      (t "containing both one and many -to-many"
         (is (= model-fixture-one-and-many-to-many
                {:model
@@ -87,16 +93,8 @@
                  :version {:attrs [:id :content]
                            :alias :versions}
                  :page {:attrs [:id :name :current_version]
-                        :joins #{{:type :many-to-many
-                                  :relation :category
-                                  :alias :categories
-                                  :link :page_category
-                                  :from :page_id
-                                  :to :category_id}
-                                 {:type :one-to-many
-                                  :relation :version
-                                  :alias :versions
-                                  :link :page_id}}}}})))))
+                        :joins #{fixture-join-category
+                                 fixture-join-version}}}})))))
 
 (deftest test-create-attr-list
   (is (= (create-attr-list :page nil)
@@ -175,21 +173,41 @@
         :category_id 1 :category_name "Clojure"}]])
 
 (def fixture-join-nested
-     [{:id 7 :name "one" :current_version 1 :categories []
-       :sandbar.database/type :page}
-      {:id 8 :name "two" :current_version 2 :sandbar.database/type :page
-       :categories [{:id 1 :name "Clojure" :sandbar.database/type :category}
-                    {:id 3 :name "SICP" :sandbar.database/type :category}]}
-      {:id 9 :name "three" :current_version 3 :sandbar.database/type :page
-       :categories [{:id 1 :name "Clojure" :sandbar.database/type :category}]}])
+     [{:id 7 :name "one" :current_version 1 :categories []}
+      {:id 8 :name "two" :current_version 2
+       :categories [{:id 1 :name "Clojure"}
+                    {:id 3 :name "SICP"}]}
+      {:id 9 :name "three" :current_version 3
+       :categories [{:id 1 :name "Clojure"}]}])
+
+(def type-key :sandbar.database/type)
+(def orig-key :sandbar.database/original)
 
 (deftest test-transform-query-plan-results
   (t "test transform query plan results"
-     (is (= (transform-query-plan-results {:subprotocol "mysql"}
-                                        :page
-                                        (:model model-fixture-many-to-many)
-                                        fixture-join-flat)
-          fixture-join-nested))
+     (let [result (transform-query-plan-results
+                   {:subprotocol "mysql"}
+                   :page
+                   (:model model-fixture-many-to-many)
+                   fixture-join-flat)
+           first-result (first result)
+           categories (-> result second :categories)
+           first-cat (first categories)]
+       (t "- is the entire structure correct"
+          (is (= result fixture-join-nested)))
+       (t "- is metadata correct on top level item"
+          (is (= (meta first-result)
+                 {type-key :page
+                  orig-key first-result})))
+       (t "- does metadata have original value"
+          (is (= first-result
+                 (-> first-result meta orig-key))))
+       (t "- does a specific category contain the correct metadata"
+          (is (= (meta first-cat)
+                 {type-key :category
+                  orig-key first-cat})))
+       (t "- does metadata for category contain the original value"
+          (is (= first-cat (-> first-cat meta orig-key)))))
      (t "with common prefixes"
         (is (= (transform-query-plan-results
                 {:subprotocol "mysql"}
@@ -201,8 +219,65 @@
                                     :page_id])))
                 [[{:page_id 1 :page_name "one" :page_category_id 1
                    :page_category_name "c1"}]])
-               [{:sandbar.database/type :page
-                 :id 1 :name "one"
-                 :categories [{:sandbar.database/type :page_category
-                               :id 1 :name "c1"}]}])))))
+               [{:id 1 :name "one"
+                 :categories [{:id 1 :name "c1"}]}])))))
 
+(deftest test-dismantle-record
+  (let [result
+        (dismantle-record
+         (:model model-fixture-many-to-many)
+         (with-meta
+           {:id 1 :name "a" :current_version 2
+            :categories (with-meta [(with-meta {:id 1 :name "a"}
+                                      {type-key :category
+                                       orig-key
+                                       {:id 1 :name "a"}})
+                                    (with-meta {:id 2 :name "b"}
+                                      {type-key :category
+                                       orig-key
+                                       {:id 2 :name "b"}})]
+                          {orig-key #{1 2}})}
+           {type-key :page
+            orig-key
+            {:id 1 :name "a" :current_version 2}}))]
+    (is (= result
+           {:base-record {:id 1 :name "a" :current_version 2}
+            :categories [{:id 1 :name "a"}
+                         {:id 2 :name "b"}]}))
+    (is (= (-> result :base-record meta)
+           {type-key :page
+            orig-key
+            {:id 1 :name "a" :current_version 2}}))
+    (is (= (-> result :categories meta)
+           {orig-key #{1 2}}))
+    (is (= (-> result :categories first meta)
+           {type-key :category
+            orig-key
+            {:id 1 :name "a"}}))))
+
+(deftest test-dirty?
+  (t "test dirty?"
+     (let [record {:id 1 :name "a"}]
+       (are [s x y] (t s (is (= (dirty? y) x)))
+            "with no metadata"
+            true record
+            "with metadata but no original"
+            true (with-meta record {type-key :a})
+            "with metadata and different original"
+            true (with-meta record {type-key :a
+                                    orig-key
+                                    {:id 1 :name "b"}})
+            "with correct original"
+            false (with-meta record {type-key :a
+                                     orig-key record})))))
+
+(deftest test-find-join-model
+  (are [x y z m] (is (= (find-join-model (:model x) y z) m))
+       model-fixture-many-to-many :page :categories
+       fixture-join-category
+       model-fixture-one-to-many :page :versions
+       fixture-join-version
+       model-fixture-one-and-many-to-many :page :categories
+       fixture-join-category
+       model-fixture-one-and-many-to-many :page :versions
+       fixture-join-version))

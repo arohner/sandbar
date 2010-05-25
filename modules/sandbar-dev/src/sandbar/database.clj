@@ -235,13 +235,16 @@
 (defn db-insert
   "Insert records, maps from keys specifying columns to values"
   [db name rec]
-  (with-transaction db #(sql/insert-records name rec)))
+  (println (str "inserting record into " name ": " rec))
+  (with-transaction db
+    #(sql/insert-records name rec)))
 
 (defn db-update
   "Update a record"
   [db name id rec]
+  (println (str "updating record in " name ": " rec))
   (with-transaction db 
-	#(sql/update-values name ["id=?" id] rec)))
+    #(sql/update-values name ["id=?" id] rec)))
 
 (defn- m-dissoc [m & keys]
   (apply dissoc (into {} m) keys))
@@ -264,6 +267,9 @@
             {}
             m)))
 
+(defn merge-many-collection [coll new-coll]
+  (vec (concat coll new-coll)))
+
 (defn merge-many
   "Create a map from the many side of the association and add it to the
    collection contained in the one side."
@@ -273,8 +279,9 @@
         host (get result-map id)]
     (assoc result-map id
            (if (:id sub)
-             (merge-with #(vec (concat %1 %2)) host
-                         {alias [(assoc sub ::type sub-relation)]})
+             (merge-with merge-many-collection host
+                         {alias [(with-meta sub {::type sub-relation
+                                                 ::original sub})]})
              (assoc host alias [])))))
 
 (defn order-and-result-map
@@ -293,7 +300,8 @@
 
 (defmethod transform-query-plan-results "mysql"
   [conn relation model results]
-  (map #(assoc % ::type relation)
+  (map #(with-meta % {::type relation
+                      ::original %})
        (if model
          (let [results (first results)
                [order rec-map] (order-and-result-map model relation results)]
@@ -332,9 +340,6 @@
        (execute-selects conn relation (:model params))
        (transform-query-plan-results conn relation (:model params))))
 
-;; TODO put type information in the metadata for each map.
-;; Maybe also store the original version of the record so that you can
-;; check later to see if it has been modified.
 (defn query
   "Find records in a table based on the passed criteria"
   ([db relation-or-sql]
@@ -345,16 +350,139 @@
   ([db relation criteria params]
      (execute-query-plan (:connection db) relation criteria params)))
 
-(defn delete-record [db table rec]
-  (with-transaction db 
-	#(sql/delete-rows table
-       (vec (create-where-vec {:id (:id rec)})))))
-							
-(defn save-or-update [db record]
-  (let [table (keyword (name (::type record)))]
-    (if (:id record)
-      (db-update db table (:id record) (m-dissoc record :id ::type))
-      (db-insert db table (m-dissoc record ::type)))))
+(defn delete-record
+  ([db rec]
+     (if-let [table (-> rec meta ::type)]
+       (delete-record db table rec)))
+  ([db table rec]
+     (println (str "deleting record from " table ": " rec))
+     (with-transaction db 
+       #(sql/delete-rows table
+                         (vec (create-where-vec {:id (:id rec)}))))))
+
+(declare save-or-update)
+
+(defn dismantle-record
+  "Return a map containing :base-record and each of the collections that
+   were in the base record. The value of base record will be the passed
+   record without the collections."
+  [model record]
+  (let [relation (-> record meta ::type)
+        joins (-> model relation :joins)
+        coll-names (map :alias joins)]
+    (merge {:base-record (apply dissoc record coll-names)}
+           (reduce (fn [a b]
+                     (assoc a b (b record)))
+                   {}
+                   coll-names))))
+
+(defn dirty?
+  "Check the metadata to see if the value of this record has changed."
+  [record]
+  (not (= record (-> record meta ::original))))
+
+(defn save-and-get-id
+  "If the record is dirty then save it. Return the id of the saved record."
+  [db record]
+  (if (dirty? record)
+    (let [relation (::type (meta record))]
+      (:id
+       (if (:id record)
+         (do
+           (db-update db relation (:id record) (m-dissoc record :id))
+           record)
+         (do
+           (db-insert db relation record)
+           (first
+            (query db
+                   relation
+                   record
+                   {}))))))
+    (:id record)))
+
+(defmulti save-associations (fn [_ join-model _ _ _] (:type join-model)))
+
+(defmethod save-associations :many-to-many
+  [db join-model record alias coll]
+  (let [{:keys [link from to]} join-model
+        selected-ids (set (map :id coll))
+        current-items (query db link {from (:id record)} {})
+        current-item-ids (set (map to current-items))
+        items-to-delete (filter #(not (contains? selected-ids (to %)))
+                                current-items)
+        items-to-add (map #(with-meta {to (:id %)
+                                       from (:id record)}
+                             {::type link})
+                          (filter #(not (contains? current-item-ids (:id %)))
+                                  coll))]
+    (do
+      (doseq [next items-to-delete]
+        (delete-record db link next))
+      (doseq [next items-to-add]
+        (save-or-update db next)))))
+
+(defmethod save-associations :default
+  [_ _ _ _ _]
+  nil)
+
+(defn find-join-model
+  "Find the map in a given model that describes the join between
+   base-relation and alias."
+  [model base-relation alias]
+  (first
+   (filter #(= (:alias %) alias)
+           (-> model base-relation :joins))))
+
+(defn save-or-update-record* [db model record]
+  (let [{record :base-record :as m} (dismantle-record model record)
+        base-relation (-> record meta ::type)
+        base-id (save-and-get-id db record)]
+    (loop [collections (dissoc m :base-record)]
+      (if (seq collections)
+        (let [next (first collections)
+              alias (key next)
+              coll (val next)]
+          (do
+            (save-associations db
+                               (find-join-model model base-relation alias)
+                               (assoc record :id base-id)
+                               alias
+                               coll)
+            (map #(save-or-update-record* db model %) coll)
+            (recur (rest collections))))
+        base-id))))
+
+(defn save-or-update* [db model record-or-coll]
+  (cond (map? record-or-coll)
+        (save-or-update-record* db (:model model) record-or-coll)
+        (seq record-or-coll)
+        (map #(save-or-update-record* db (:model model) %) record-or-coll)
+        :else "Error: input is neither a map or a sequence."))
+
+(defn- set-relation [relation m]
+  (with-meta m {::type relation}))
+
+(defn save-or-update
+  ([db record-or-coll]
+     (save-or-update db nil record-or-coll))
+  ([db model record-or-coll]
+     (if (keyword? model)
+       (save-or-update db nil (set-relation model record-or-coll))
+       (sql/with-connection (:connection db)
+        (sql/transaction
+         (save-or-update* db model record-or-coll))))))
+
+;; Functions for manipulating nested data structures
+
+(defn conj-in [m ks v]
+  (let [size (count (get-in m ks))]
+    (assoc-in m (conj ks size) v)))
+
+(defn remove-in [m ks v]
+  (let [coll (get-in m ks)]
+    (assoc-in m
+              ks
+              (filter #(not (= v (select-keys % (keys v)))) coll))))
 
 (comment
 
@@ -380,4 +508,5 @@
   ;; a list of associated cars.
   
   (query db :person {:id 8} data-model)
+  
   )
