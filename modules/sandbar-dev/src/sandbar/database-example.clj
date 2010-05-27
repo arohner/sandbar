@@ -11,28 +11,31 @@
 
 (def db {:connection {:classname "com.mysql.jdbc.Driver"
                       :subprotocol "mysql"
-                      :subname "//localhost/fpl_db"
-                      :user "tomcat"
+                      :subname "//localhost/sandbar_sample_db"
+                      :user "sample_db_user"
                       :password "123456789"}})
 
-(def data-model 
+(def dm
      (model
-      (relation :quick_category [:id
-                                 :name])
-      (relation :quick_page_version [:id
-                                     :quick_page
-                                     :version
-                                     :mod_date
-                                     :mod_user_name
-                                     :content
-                                     :published])
-      (relation :quick_page [:id
-                             :name
-                             :context
-                             :current_version
-                             :publish_date]
-                [:has-many :categories :quick_category
-                 :through :quick_page_category :page_id :category_id]
-                #_[:has-many :versions :quick_page_version :quick_page])))
+      (relation :album [:id :title]
+                [:has-many :artists :artist
+                 :=> :album_artist :album_id :artist_id])
+      (relation :artist [:id :name])))
 
-(query db :quick_page {} data-model)
+(def $ (partial query db dm))
+(def $1 (partial query-1 db dm))
+
+;; My dream query language
+($ :album) ;; return only albums
+;; select * from album
+($1 :album {:name "Magic Potion"}) ;; return only albums ||
+;; select * from album where name = "Magic Potion"
+($ :album {:name "Magic Potion"} {:name "Let's*"}) ;; "or" query
+;; select * from album where name = "Magic Potion" or name like "let's%"
+($1 :album [:id] {:name "Magic Potion"})
+;; select id from album where name = "Magic Potion"
+($ :album :with :artists) ;; return albums with nested artists
+($ :artists :with :albums) ;; return artists with nested albums
+
+($ :album :with [:artists [:id] {:name "David*"}])
+

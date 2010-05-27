@@ -69,6 +69,19 @@
              (take (- (count status) 1) ids)
              (take (count status) ids)))))))
 
+(defn get-version-record [db]
+  (first
+   (query db :key_value {:key_name "database-version"})))
+
+(defn get-version [db]
+  (:value
+   (get-version-record db)))
+
+(defn set-version [db version]
+  (if version
+    (let [version-record (get-version-record db)]
+      (save-or-update db (assoc version-record :value version)))))
+
 (defn run-all-migrations-after
   "Attempt to run all of the migrations which have a higher id than the id
    number passed to this function. Return a map that shows the success or
@@ -80,7 +93,7 @@
                            (filter #(> (str->int %) v)))]
     (if-let [result (run-migration-ids db ns migration-ids)]
       (do
-        (put-value db :database-version (last result))
+        (set-version db (last result))
         result))))
 
 (defn rollback-last-migration
@@ -99,9 +112,11 @@
       (try
        (let [result (run-migration-ids db ns [rollback-id] :back)]
          (if (not (empty? result))
-           (put-value db :database-version new-id))
+           (set-version db new-id))
          result)
        (catch Exception _ nil)))))
+
+
 
 (defn migrate
   "Get the current version of the database and then find and run all
@@ -109,7 +124,7 @@
    out or try to run one that doesn't work."
   ([db mig-ns] (migrate db mig-ns run-all-migrations-after))
   ([db mig-ns mig-fn]
-     (if-let [version (get-value db :database-version)]
+     (if-let [version (get-version db)]
        (mig-fn db mig-ns (str->int version)))))
 
 (defn rollback

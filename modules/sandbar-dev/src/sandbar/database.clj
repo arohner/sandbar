@@ -13,12 +13,6 @@
 	                 [str-utils :only (re-gsub)]
                          [map-utils :only (deep-merge-with)])))
 
-(defprotocol KeyValueStore
-  "Key/Value abstraction"
-  (put-value [this key val] "Save a new value under this key or update an
-                             existing value.")
-  (get-value [this key] "Return the value for this key."))
-
 ;; Begin define relationships
 
 (defn set-merge [& body]
@@ -28,7 +22,7 @@
     (apply merge body)))
 
 (defn model [& body]
-  {:model (apply deep-merge-with set-merge body)})
+  (apply deep-merge-with set-merge body))
 
 (defn compile-has-many [relation coll]
   (cond (= (count coll) 7)
@@ -115,12 +109,24 @@
   ([criteria]
      (create-where-vec nil criteria))
   ([relation criteria]
-     (if (> (count criteria) 0)
-       (let [split (split-criteria criteria)]
-         (cons
-          (create-where-str relation (first split) (rest split))
-          (map replace-wildcard (filter #(not (nil? %)) (rest split)))))
-       nil)))
+     (loop [query-strings []
+            values []
+            criteria criteria]
+       (if-let [next (first criteria)]
+         (if-let [[qs & v] (split-criteria next)]
+           (recur (conj query-strings
+                        (create-where-str relation qs v))
+                  (concat values v)
+                  (rest criteria))
+           (recur query-strings values (rest criteria)))
+         (if (seq query-strings)
+           (cons
+            (apply str (interpose " OR "
+                                  (if (> (count query-strings) 1)
+                                    (map #(str "(" % ")") query-strings)
+                                    query-strings)))
+            (map replace-wildcard (filter #(not (nil? %)) values)))
+           nil)))))
 
 (defn to-string [a]
   (cond (keyword? a) (name a)
@@ -145,20 +151,27 @@
           (str r "." a " as " r "_" a))
        attrs))
 
-(defn create-attr-list [relation model]
-  (if model
-    (let [attrs (-> model relation :attrs)]
-      (loop [result (create-relation-qualified-names relation
-                                                     attrs)
-             joins (-> model relation :joins)]
-        (if (seq joins)
-          (let [{type :type many-side :relation} (first joins)
-                attrs (-> model many-side :attrs)]
-            (recur (concat result (create-relation-qualified-names many-side
-                                                                   attrs))
-                   (rest joins)))
-          (apply str " " (interpose ", " result)))))
-    " *"))
+(defn get-attrs [model relation req-attrs]
+  (if-let [attrs (relation req-attrs)]
+    attrs
+    (-> model relation :attrs)))
+
+(defn create-attr-list
+  ([model relation]
+     (create-attr-list model relation nil))
+  ([model relation req-attrs]
+     (if-let [attrs (get-attrs model relation req-attrs)]
+       (loop [result (create-relation-qualified-names relation
+                                                      attrs)
+              joins (-> model relation :joins)]
+         (if (seq joins)
+           (let [{type :type many-side :relation} (first joins)
+                 attrs (get-attrs model many-side req-attrs)]
+             (recur (concat result (create-relation-qualified-names many-side
+                                                                    attrs))
+                    (rest joins)))
+           (apply str " " (interpose ", " result))))
+       " *")))
 
 (defn many-to-many? [join]
   (= (:type join) :many-to-many))
@@ -183,7 +196,7 @@
       (str result
            " LEFT JOIN " rel " ON " (name base-rel) ".id = " rel "." link))))
 
-(defn create-joins [relation model]
+(defn create-joins [model relation requested-joins]
   (loop [result ""
          joins (-> model relation :joins)]
     (if (seq joins)
@@ -197,6 +210,25 @@
          (rest joins))) 
       result)))
 
+(defn parse-query-part [relation q]
+  (loop [q q
+         result {}]
+    (if (seq q)
+      (let [next (first q)]
+        (recur (rest q)
+               (cond (vector? next) (merge result {:attrs {relation next}})
+                     (map? next) (merge-with concat result {:criteria [next]})
+                     :else result)))
+      result)))
+
+(defn parse-query
+  "Create a map with keys :attrs :criteria and :joins"
+  [relation q]
+  (let [split-pred #(not (= % :with))
+        query-part (take-while split-pred q)
+        join-part (drop-while split-pred q)]
+    (merge (parse-query-part relation q))))
+
 (defn subprotocol-dispatch [conn _ _ _]
   (:subprotocol conn))
 
@@ -204,13 +236,13 @@
 
 (defn create-selects-mysql
   "Create the select vector that can be passed to with-query-results"
-  [conn relation criteria params]
-  [(let [model (:model params)
-         select-part (str "SELECT" (create-attr-list relation model)
+  [conn model relation q]
+  [(let [{:keys [attrs criteria joins]} (parse-query relation q)
+         select-part (str "SELECT" (create-attr-list model relation attrs)
                           " FROM " (as-str relation)
-                          (create-joins relation model))
+                          (create-joins model relation joins))
          where-part (create-where-vec relation criteria)
-         order-by-part (create-order-by params)]
+         order-by-part (create-order-by {})]
      (if where-part
        (vec (cons (str select-part " WHERE " (first where-part) order-by-part)
                   (rest where-part)))
@@ -299,10 +331,10 @@
 (defmulti transform-query-plan-results subprotocol-dispatch)
 
 (defmethod transform-query-plan-results "mysql"
-  [conn relation model results]
+  [conn model relation results]
   (map #(with-meta % {::type relation
                       ::original %})
-       (if model
+       (if (and model (relation model))
          (let [results (first results)
                [order rec-map] (order-and-result-map model relation results)]
            (loop [joins (-> model relation :joins)
@@ -326,7 +358,7 @@
       sql
       (into [] res))))
 
-(defn execute-selects [conn relation params selects]
+(defn execute-selects [conn model relation selects]
   (sql/with-connection conn
     (reduce (fn [results next-select]
               (sql/with-query-results res
@@ -335,20 +367,36 @@
             []
             selects)))
 
-(defn execute-query-plan [conn relation criteria params]
-  (->> (create-selects conn relation criteria params)
-       (execute-selects conn relation (:model params))
-       (transform-query-plan-results conn relation (:model params))))
+(defn execute-query-plan [conn model relation q]
+  (->> (create-selects conn model relation q)
+       (execute-selects conn model relation)
+       (transform-query-plan-results conn model relation)))
 
-(defn query
-  "Find records in a table based on the passed criteria"
-  ([db relation-or-sql]
-     (if (keyword? relation-or-sql)
-       (query db relation-or-sql {} {})
-       (raw-sql db relation-or-sql)))
-  ([db relation criteria] (query db relation criteria {}))
-  ([db relation criteria params]
-     (execute-query-plan (:connection db) relation criteria params)))
+(defn query [db & q]
+  (let [conn (:connection db)
+        first-arg (first q)
+        q (rest q)]
+    (cond (vector? first-arg) (raw-sql db first-arg)
+          (keyword? first-arg) (execute-query-plan conn nil first-arg q)
+          (map? first-arg)
+          (execute-query-plan conn first-arg (first q) (rest q))
+          :else (throw
+                 (Exception.
+                  (str "Invalid query syntax. "
+                       "First arg is not raw sql, a model or a relation."))))))
+
+(defn query-1
+  "Same as query but we expect to return a single record. Throws and
+   exception if more than one result is received."
+  [& args]
+  (let [result (apply query args)
+        result-count (count result)]
+    (if (> 2 result-count)
+      (first result)
+      (throw
+       (Exception. (str "Expecting 1 result but received "
+                        result-count
+                        "."))))))
 
 (defn delete-record
   ([db rec]
@@ -358,7 +406,7 @@
      (println (str "deleting record from " table ": " rec))
      (with-transaction db 
        #(sql/delete-rows table
-                         (vec (create-where-vec {:id (:id rec)}))))))
+                         (vec (create-where-vec [{:id (:id rec)}]))))))
 
 (declare save-or-update)
 
@@ -394,10 +442,7 @@
          (do
            (db-insert db relation record)
            (first
-            (query db
-                   relation
-                   record
-                   {}))))))
+            (query db relation record))))))
     (:id record)))
 
 (defmulti save-associations (fn [_ join-model _ _ _] (:type join-model)))
@@ -406,7 +451,7 @@
   [db join-model record alias coll]
   (let [{:keys [link from to]} join-model
         selected-ids (set (map :id coll))
-        current-items (query db link {from (:id record)} {})
+        current-items (query db link {from (:id record)})
         current-item-ids (set (map to current-items))
         items-to-delete (filter #(not (contains? selected-ids (to %)))
                                 current-items)
@@ -454,9 +499,10 @@
 
 (defn save-or-update* [db model record-or-coll]
   (cond (map? record-or-coll)
-        (save-or-update-record* db (:model model) record-or-coll)
+        (save-or-update-record* db model record-or-coll)
         (seq record-or-coll)
-        (map #(save-or-update-record* db (:model model) %) record-or-coll)
+        (doseq [next record-or-coll]
+          (save-or-update-record* db model next))
         :else "Error: input is neither a map or a sequence."))
 
 (defn- set-relation [relation m]
@@ -467,10 +513,15 @@
      (save-or-update db nil record-or-coll))
   ([db model record-or-coll]
      (if (keyword? model)
-       (save-or-update db nil (set-relation model record-or-coll))
+       (save-or-update db nil model record-or-coll)
        (sql/with-connection (:connection db)
-        (sql/transaction
-         (save-or-update* db model record-or-coll))))))
+         (sql/transaction
+          (save-or-update* db model record-or-coll)))))
+  ([db model relation record-or-coll]
+     (if (map? record-or-coll)
+       (save-or-update db model (set-relation relation record-or-coll))
+       (save-or-update db model
+                       (map #(set-relation relation %) record-or-coll)))))
 
 ;; Functions for manipulating nested data structures
 
@@ -486,14 +537,16 @@
 
 (comment
 
+  (def $ (partial query db))
+
   ;; various kinds of queries
-  (query db :person)
-  (query db :person {:id 8})
-  (query db :person {:name "brent*"})
+  ($ :person)
+  ($ :person {:id 8})
+  ($ :person {:name "brent*"})
 
   ;; Arbitrary SQL
-  (query db ["SELECT * FROM person"])
-  (query db ["SELECT * FROM person WHERE id = ?" 8])
+  ($ ["SELECT * FROM person"])
+  ($ ["SELECT * FROM person WHERE id = ?" 8])
 
   ;; using data models
   (def data-model 
@@ -502,11 +555,11 @@
                         [:has-many :cars :car :make
                          :through :person_car :person_id :car_id])))
   
-  (query db :person {} data-model)
+  ($ :person {} data-model)
   ;; The above query will perform a join through the :person_car table
   ;; and will get all people, each one have a :cars key that contains
   ;; a list of associated cars.
   
-  (query db :person {:id 8} data-model)
+  ($ :person {:id 8} data-model)
   
   )

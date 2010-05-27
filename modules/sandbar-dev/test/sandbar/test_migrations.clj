@@ -50,55 +50,60 @@
          ["20100515001" "20100516001"] ["20100515001"]
          ["20100515001" "20100516001" "20100516002"] ["20100515001"])))
 
-(defrecord MockDatabase [state] KeyValueStore
-  (put-value
-   [this key val]
-   (swap! state assoc key val))
-  (get-value
-   [this key]
-   (get @state key)))
+(defn mock-database [v]
+  (let [state (atom {:version v})]
+    [(fn [db]
+       (:version @state))
+     (fn [db version]
+       (swap! state assoc :version version))]))
+
+(defmacro with-mock-database [v & body]
+  `(let [database# (mock-database ~v)]
+     (binding [~'get-version (first database#)
+               ~'set-version (last database#)]
+       ~@body)))
 
 (deftest test-run-all-migrations-after
-  (let [state (atom {})
-        result (run-all-migrations-after (MockDatabase. state)
-                                         mig-ns
-                                         20100515000)]
-    (is (= result
-           ["20100515001"]))
-    (is (= (:database-version @state) "20100515001"))))
+  (with-mock-database nil
+    (let [result (run-all-migrations-after {}
+                                           mig-ns
+                                           20100515000)]
+      (is (= result
+             ["20100515001"]))
+      (is (= (get-version {}) "20100515001")))))
 
 (deftest test-rollback-last-migration
-  (let [state (atom {:database-version "20100515001"})
-        result (rollback-last-migration (MockDatabase. state)
-                                        mig-ns
-                                        20100515001)]
-    (is (= result
-           ["20100515001"]))
-    (is (= (:database-version @state) "20100515000")))
-  (let [state (atom {:database-version "20100516001"})
-        result (rollback-last-migration (MockDatabase. state)
-                                        mig-ns
-                                        20100516001)]
-    (is (= result
-           []))
-    (is (= (:database-version @state) "20100516001"))))
+  (with-mock-database "20100515001"
+    (let [result (rollback-last-migration {}
+                                          mig-ns
+                                          20100515001)]
+     (is (= result
+            ["20100515001"]))
+     (is (= (get-version {}) "20100515000"))))
+  (with-mock-database "20100516001"
+    (let [result (rollback-last-migration {}
+                                          mig-ns
+                                          20100516001)]
+      (is (= result
+             []))
+      (is (= (get-version {}) "20100516001")))))
 
 (deftest test-migrate
-  (let [state (atom {:database-version "20100515000"})
-        result (migrate (MockDatabase. state)
-                        mig-ns)]
-    (is (= result
-           ["20100515001"]))
-    (is (= (:database-version @state) "20100515001"))))
+  (with-mock-database "20100515000"
+    (let [result (migrate {}
+                          mig-ns)]
+      (is (= result
+             ["20100515001"]))
+      (is (= (get-version {}) "20100515001")))))
 
 (deftest test-rollback
-  (let [state (atom {:database-version "20100515001"})
-        result (rollback (MockDatabase. state) mig-ns)]
-    (is (= result
-           ["20100515001"]))
-    (is (= (:database-version @state) "20100515000")))
-  (let [state (atom {:database-version "20100515000"})
-        result (rollback (MockDatabase. state) mig-ns)]
-    (is (= result
-           nil))
-    (is (= (:database-version @state) "20100515000"))))
+  (with-mock-database "20100515001"
+    (let [result (rollback {} mig-ns)]
+      (is (= result
+             ["20100515001"]))
+      (is (= (get-version {}) "20100515000"))))
+  (with-mock-database "20100515000"
+    (let [result (rollback {} mig-ns)]
+      (is (= result
+             nil))
+      (is (= (get-version {}) "20100515000")))))

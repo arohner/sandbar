@@ -1,7 +1,7 @@
-(defproject sandbar/sandbar-dev "0.0.2-SNAPSHOT"
+(defproject sandbar/sandbar-dev "0.0.1-SNAPSHOT"
   :description "New sandbar libraries which are not ready to be unleashed."
-  :dependencies [[org.clojure/clojure "1.2.0-master-SNAPSHOT"]
-                 [org.clojure/clojure-contrib "1.2.0-master-SNAPSHOT"]
+  :dependencies [[org.clojure/clojure "1.1.0"]
+                 [org.clojure/clojure-contrib "1.1.0"]
                  [compojure "0.4.0-SNAPSHOT"]
                  [hiccup "0.2.3"]
                  [sandbar/sandbar-core "0.3.0"]
