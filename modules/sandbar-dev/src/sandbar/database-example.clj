@@ -28,12 +28,13 @@
 ;; My dream query language
 ($ :album) ;; return only albums
 ;; select * from album
-($1 :album {:name "Magic Potion"}) ;; return only albums ||
+($1 :album {:name "Magic Potion"}) ;; return only albums
 ;; select * from album where name = "Magic Potion"
 ($ :album {:name "Magic Potion"} {:name "Let's*"}) ;; "or" query
 ;; select * from album where name = "Magic Potion" or name like "let's%"
 ($1 :album [:id] {:name "Magic Potion"})
 ;; select id from album where name = "Magic Potion"
+
 ($ :album :with :artists) ;; return albums with nested artists
 ($ :artists :with :albums) ;; return artists with nested albums
 

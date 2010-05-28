@@ -11,28 +11,36 @@
         (sandbar test database migrations
                  [sample-database-migrations :only (create-key-value-table)])))
 
+(deftest test-split-with
+  (are [x y] (is (= (split-with #(not (= % :c)) x) y))
+       [:a :b :c :d] [[:a :b] [:c :d]]))
+
 (deftest test-map-values
   (is (= (map-values #(if (nil? %) 42 %) {:name "John" :age 27 :height nil}) 
          {:name "John" :age 27 :height 42})))
 
 (deftest test-split-criteria
-  (is (= (split-criteria {:id 1}) (list [:id] 1)))
-  (is (= (split-criteria {:id 1 :name "John"}) (list [:id :name] 1 "John"))))
+  (are [a _ result] (= (split-criteria a) result)
+       {:id 1}              :=> [[:id] 1]
+       {:id 1 :name "John"} :=> [[:id :name] 1 "John"]))
 
 (deftest test-create-comparison
-  (is (= (create-comparison :id 1) "id = ?"))
-  (is (= (create-comparison :name "John") "name = ?"))
-  (is (= (create-comparison :name nil) "name IS NULL"))
-  (is (= (create-comparison :name "Joh*") "name like ?")))
+  (are [a b _ result] (= (create-comparison a b) result) 
+       :id 1        :=> "id = ?"
+       :name "John" :=> "name = ?"
+       :name nil    :=> "name IS NULL"
+       :name "Joh*" :=> "name like ?"))
 
 (deftest test-create-where-str
-  (is (= (create-where-str [:id] [1]) "id = ?"))
-  (is (= (create-where-str [:id :name] [1 "John"]) "id = ? AND name = ?"))
-  (is (= (create-where-str [:id :name :desc :cost] [1 "John" "Something*" nil]) 
-         "id = ? AND name = ? AND desc like ? AND cost IS NULL")))
+  (are [a b _ result] (= (create-where-str a b) result)
+       [:id] [1]                   :=> "id = ?"
+       [:id :name] [1 "John"]      :=>"id = ? AND name = ?"
+       [:id :name :desc :cost]
+       [1 "John" "Something*" nil] :=>
+       "id = ? AND name = ? AND desc like ? AND cost IS NULL"))
 
 (deftest test-create-where-vec
-  (are [x y] (is (= (create-where-vec x) y))
+  (are [x y] (= (create-where-vec x) y)
        [] nil
        [{:name "a"}] ["name = ?" "a"]
        [{:name "a" :age 7}] ["name = ? AND age = ?" "a" 7]
@@ -45,25 +53,23 @@
 
 (def fixture-model-many-to-many
      (model
-      (relation :category [:id :name])
-      (relation :page [:id :name :current_version]
-                [:has-many :categories :category
-                 :through :page_category :page_id :category_id])))
+      (category [:id :name])
+      (page [:id :name :current_version]
+            (many-to-many :category))))
 
 (def fixture-model-one-to-many
      (model
-      (relation :version [:id :content])
-      (relation :page [:id :name :current_version]
-                [:has-many :versions :version :page_id])))
+      (version [:id :content])
+      (page [:id :name :current_version]
+            (one-to-many versions :version :page_id))))
 
 (def fixture-model-one-and-many-to-many
      (model
-      (relation :category [:id :name])
-      (relation :version [:id :content])
-      (relation :page [:id :name :current_version]
-                [:has-many :categories :category
-                 :through :page_category :page_id :category_id]
-                [:has-many :versions :version :page_id])))
+      (category [:id :name])
+      (version [:id :content])
+      (page [:id :name :current_version]
+            (many-to-many :category)
+            (one-to-many :version))))
 
 (def fixture-join-category
      {:type :many-to-many
@@ -78,6 +84,17 @@
       :relation :version
       :alias :versions
       :link :page_id})
+
+(def fixture-artist-album-model
+     {:album {:attrs [:id :title]
+              :joins #{{:type :many-to-many
+                        :relation :artist
+                        :alias :artists
+                        :link :album_artist
+                        :from :album_id
+                        :to :artist_id}}}
+      :artist {:attrs [:id :name]
+               :alias :artists}})
 
 (deftest test-model
   (t "test creating a model"
@@ -101,85 +118,161 @@
                            :alias :versions}
                  :page {:attrs [:id :name :current_version]
                         :joins #{fixture-join-category
-                                 fixture-join-version}}})))))
+                                 fixture-join-version}}})))
+     (t "using the relation macro"
+        (are [x] (= x fixture-artist-album-model)
+
+             (model
+              (album [:id :title]
+                     (many-to-many artists :artist
+                                   => :album_artist :album_id :artist_id))
+              (artist [:id :name]))
+
+             (model
+              (album [:id :title]
+                     (many-to-many artists :artist => :album_artist))
+              (artist [:id :name]))
+
+             (model
+              (album [:id :title]
+                     (many-to-many artists :artist))
+              (artist [:id :name]))
+
+             (model
+              (album [:id :title]
+                     (many-to-many :artist => :album_artist))
+              (artist [:id :name]))
+             
+             (model
+              (album [:id :title]
+                     (many-to-many :artist))
+              (artist [:id :name])))
+        (are [x] (= x {:version {:alias :versions}
+                       :page {:attrs [:name]
+                              :joins #{{:type :one-to-many
+                                        :alias :versions
+                                        :relation :version
+                                        :link :page_id}}}})
+             (model (page [:name]
+                          (one-to-many versions :version :page_id)))
+             
+             (model (page [:name]
+                          (one-to-many :version :page_id)))
+
+             (model (page [:name]
+                          (one-to-many :version)))))))
+
+(defn attr-as [table col]
+  (let [table (name table)
+        col (name col)]
+    (str table "." col " as " table "_" col)))
+
+(defn comma-delim-str [coll]
+  (apply str (interpose ", " coll)))
+
+(defn attr-list [coll]
+  (str " "
+       (comma-delim-str
+        (map #(let [[table attrs] %]
+                (comma-delim-str
+                 (reduce (fn [a b]
+                           (conj a (attr-as table b)))
+                         []
+                         attrs)))
+             coll))))
+
+(def page-table [:page [:id :name :current_version]])
+(def category-table [:category [:id :name]])
+(def version-table [:version [:id :content]])
 
 (deftest test-create-attr-list
-  (is (= (create-attr-list nil :page)
-         " *"))
-  (is (= (create-attr-list {} :page)
-         " *"))
-  (is (= (create-attr-list fixture-model-one-and-many-to-many :page)
-         " page.id as page_id, page.name as page_name, page.current_version as page_current_version, category.id as category_id, category.name as category_name, version.id as version_id, version.content as version_content"))
-  (is (= (create-attr-list fixture-model-many-to-many :page
-                           {:page [:name]})
-         " page.name as page_name, category.id as category_id, category.name as category_name"))
-  (is (= (create-attr-list fixture-model-many-to-many :page
-                           {:page [:name] :category [:name]})
-         " page.name as page_name, category.name as category_name")))
+  (is (= (create-attr-list nil :page) " *"))
+  (is (= (create-attr-list {} :page) " *"))
+  (are [model q j _ attrs] (= (create-attr-list model :page q j)
+                                (attr-list attrs)))
+
+  fixture-model-one-and-many-to-many
+  nil
+  {:page [:categories :versions]} :=> [page-table
+                                       category-table
+                                       version-table]
+  
+  
+  fixture-model-many-to-many
+  {:page [:name]}
+  {:page [:categories]}           :=> [[:page [:name :id]]
+                                       category-table]
+  
+  fixture-model-many-to-many
+  {:page [:name] :category [:name]}
+  {:page [:categories]}           :=> [[:page [:name :id]]
+                                       [:category [:name :id]]])
 
 (deftest test-parse-query
-  (are [x y] (is (= (parse-query :page x) y))
-       [] {}
-       [[:id]] {:attrs {:page [:id]}}
-       [{:name "a"}] {:criteria [{:name "a"}]}
-       [{:name "a" :age 7}] {:criteria [{:name "a" :age 7}]}
-       [{:name "a"} {:name "b"}] {:criteria [{:name "a"} {:name "b"}]}
-       [[:id] {:name "a"}] {:attrs {:page [:id]} :criteria [{:name "a"}]}))
+  (are [x _ y] (= (parse-query :page x) y)
+       []                        :=> {}
+       [[:id]]                   :=> {:attrs {:page [:id]}}
+       [{:name "a"}]             :=> {:criteria [{:name "a"}]}
+       [{:name "a" :age 7}]      :=> {:criteria [{:name "a" :age 7}]}
+       [{:name "a"} {:name "b"}] :=> {:criteria [{:name "a"} {:name "b"}]}
+       [[:id] {:name "a"}]       :=> {:attrs {:page [:id]}
+                                      :criteria [{:name "a"}]}))
+
+(defn select-from [attrs]
+  (str "SELECT" attrs " FROM page"))
 
 (def many-to-many-join-query
-     (str "SELECT page.id as page_id, page.name as page_name, "
-          "page.current_version as page_current_version, "
-          "category.id as category_id, category.name as category_name "
-          "FROM page "
-          "LEFT JOIN page_category ON page.id = page_category.page_id "
+     (str (select-from
+           (attr-list [page-table category-table]))
+          " LEFT JOIN page_category ON page.id = page_category.page_id "
           "LEFT JOIN category ON page_category.category_id = category.id"))
 
 (def one-to-many-join-query
-     (str "SELECT page.id as page_id, page.name as page_name, "
-          "page.current_version as page_current_version, "
-          "version.id as version_id, version.content as version_content "
-          "FROM page "
-          "LEFT JOIN version ON page.id = version.page_id"))
+     (str (select-from
+           (attr-list [page-table version-table]))
+          " LEFT JOIN version ON page.id = version.page_id"))
 
 (def one-and-many-to-many-join-query
-     (str "SELECT page.id as page_id, page.name as page_name, "
-          "page.current_version as page_current_version, "
-          "category.id as category_id, category.name as category_name, "
-          "version.id as version_id, version.content as version_content "
-          "FROM page "
-          "LEFT JOIN page_category ON page.id = page_category.page_id "
+     (str (select-from
+           (attr-list [page-table category-table version-table]))
+          " LEFT JOIN page_category ON page.id = page_category.page_id "
           "LEFT JOIN category ON page_category.category_id = category.id "
           "LEFT JOIN version ON page.id = version.page_id"))
 
-(def select-query "SELECT * FROM page")
-
 (deftest test-create-selects
-  (are [model q result]
+  (are [model q _ result]
        (= (create-selects {:subprotocol "mysql"} model :page q)
           result)
        
-       {} [] [[select-query]]
-
-       nil [] [[select-query]]
-
-       nil [{:id 1}] [[(str select-query " WHERE page.id = ?") 1]]
-       
-       nil [{:name "brent*"}]
-       [[(str select-query " WHERE page.name like ?") "brent%"]]
-
-       fixture-model-many-to-many [] [[many-to-many-join-query]]
-
-       fixture-model-many-to-many [{:id 1}] 
-       [[(str many-to-many-join-query " WHERE page.id = ?") 1]]
-
-       fixture-model-many-to-many [{:id 1 :name "brenton"}] 
-       [[(str many-to-many-join-query
-              " WHERE page.id = ? AND page.name = ?") 1 "brenton"]]
-
-       fixture-model-one-to-many [] [[one-to-many-join-query]]
-
-       fixture-model-one-and-many-to-many []
-       [[one-and-many-to-many-join-query]]))
+       {} []                          :=> [[(select-from " *")]]
+       nil []                         :=> [[(select-from " *")]]
+       nil [{:id 1}]                  :=> [[(str (select-from " *")
+                                                 " WHERE page.id = ?") 1]]
+       nil [{:name "brent*"}]         :=> [[(str (select-from " *")
+                                                 " WHERE page.name like ?")
+                                            "brent%"]]
+       fixture-model-many-to-many
+       []                             :=> [[(select-from
+                                             (attr-list [page-table]))]]
+       fixture-model-many-to-many
+       [:with :categories]            :=> [[many-to-many-join-query]]
+       fixture-model-many-to-many
+       [{:id 1}]                      :=> [[(str (select-from
+                                                  (attr-list [page-table]))
+                                                 " WHERE page.id = ?") 1]]
+       fixture-model-many-to-many
+       [{:id 1} :with :categories]    :=> [[(str many-to-many-join-query
+                                                 " WHERE page.id = ?") 1]]
+       fixture-model-many-to-many
+       [{:id 1 :name "brenton"}
+        :with :categories]            :=> [[(str many-to-many-join-query
+                                                 " WHERE page.id = ?"
+                                                 " AND page.name = ?")
+                                            1 "brenton"]]
+        fixture-model-one-to-many
+        [:with :versions]             :=> [[one-to-many-join-query]]
+        fixture-model-one-and-many-to-many
+        [:with :categories :versions] :=> [[one-and-many-to-many-join-query]]))
 
 (deftest test-dequalify-joined-map
   (are [x y z] (= (dequalify-joined-map fixture-model-many-to-many x y) z)
@@ -213,43 +306,44 @@
 (def orig-key :sandbar.database/original)
 
 (deftest test-transform-query-plan-results
-  (t "test transform query plan results"
-     (let [result (transform-query-plan-results
-                   {:subprotocol "mysql"}
-                   fixture-model-many-to-many
-                   :page
-                   fixture-join-flat)
-           first-result (first result)
-           categories (-> result second :categories)
-           first-cat (first categories)]
-       (t "- is the entire structure correct"
-          (is (= result fixture-join-nested)))
-       (t "- is metadata correct on top level item"
-          (is (= (meta first-result)
-                 {type-key :page
-                  orig-key first-result})))
-       (t "- does metadata have original value"
-          (is (= first-result
-                 (-> first-result meta orig-key))))
-       (t "- does a specific category contain the correct metadata"
-          (is (= (meta first-cat)
-                 {type-key :category
-                  orig-key first-cat})))
-       (t "- does metadata for category contain the original value"
-          (is (= first-cat (-> first-cat meta orig-key)))))
-     (t "with common prefixes"
-        (is (= (transform-query-plan-results
-                {:subprotocol "mysql"}
-                (model
-                 (relation :page_category [:id :name])
-                 (relation :page [:id :name]
-                           [:has-many :categories :page_category
-                            :page_id]))
-                :page
-                [[{:page_id 1 :page_name "one" :page_category_id 1
-                   :page_category_name "c1"}]])
-               [{:id 1 :name "one"
-                 :categories [{:id 1 :name "c1"}]}])))))
+  (let [t-q-p-r
+        (fn [model res]
+          (transform-query-plan-results {:subprotocol "mysql"}
+                                        model
+                                        :page
+                                        [:with :categories]
+                                        res))]
+    (t "test transform query plan results"
+       (let [result (t-q-p-r fixture-model-many-to-many
+                             fixture-join-flat)
+            first-result (first result)
+            categories (-> result second :categories)
+            first-cat (first categories)]
+        (t "- is the entire structure correct"
+           (is (= result fixture-join-nested)))
+        (t "- is metadata correct on top level item"
+           (is (= (meta first-result)
+                  {type-key :page
+                   orig-key first-result})))
+        (t "- does metadata have original value"
+           (is (= first-result
+                  (-> first-result meta orig-key))))
+        (t "- does a specific category contain the correct metadata"
+           (is (= (meta first-cat)
+                  {type-key :category
+                   orig-key first-cat})))
+        (t "- does metadata for category contain the original value"
+           (is (= first-cat (-> first-cat meta orig-key)))))
+      (t "with common prefixes"
+         (is (= (t-q-p-r (model
+                          (page_category [:id :name])
+                          (page [:id :name]
+                                (one-to-many categories
+                                             :page_category :page_id)))
+                         [[{:page_id 1 :page_name "one" :page_category_id 1
+                            :page_category_name "c1"}]])
+                [{:id 1 :name "one"
+                  :categories [{:id 1 :name "c1"}]}]))))))
 
 (deftest test-dismantle-record
   (let [result
@@ -322,12 +416,13 @@
                       :user "sandbar_user"
                       :password "123456789"}})
 
+
 (def data-model
      (model
-      (relation :album [:id :title]
-                [:has-many :artists :artist
-                 :=> :album_artist :album_id :artist_id])
-      (relation :artist [:id :name])))
+      (album [:id :title]
+             (many-to-many :artist))
+      (artist [:id :name]
+              (many-to-many :album => :album_artist))))
 
 (def ! (partial save-or-update db data-model))
 (def $ (partial query db data-model))
@@ -338,16 +433,19 @@
     (try
      (create-key-value-table (partial db-do-commands db))
      (catch Exception _ false))
-    (! :key_value {:key_name "database-version" :value "20100524000"})
-    (migrate db "sandbar.sample-database-migrations")))
+    (try
+     (! :key_value {:key_name "database-version" :value "20100524000"})
+     (migrate db "sandbar.sample-database-migrations")
+     true
+     (catch Exception _ false))))
 
 (defn delete-all-test-data []
   (do
-    (doseq [next (query db :album_artist)]
+    (doseq [next ($ :album_artist)]
       (delete-record db next))
-    (doseq [next (query db :album)]
+    (doseq [next ($ :album)]
       (delete-record db next))
-    (doseq [next (query db :artist)]
+    (doseq [next ($ :artist)]
       (delete-record db next))))
 
 (defn default-test-data []
@@ -357,7 +455,7 @@
                {:title "Let's Dance"}])
     (! :artist [{:name "The Black Keys"}
                 {:name "David Bowie"}])
-    (! (conj-in ($1 :album {:title "Magic Potion"})
+    (! (conj-in ($1 :album {:title "Magic Potion"} :with :artists)
                 [:artists]
                 ($1 :artist {:name "The Black Keys"})))))
 
@@ -371,21 +469,87 @@
        (if (not (seq v))
          (build-test-database)))
      (catch Exception _ (build-test-database)))
-    (migrate db "sandbar.sample-database-migrations")))
+    (try
+     (migrate db "sandbar.sample-database-migrations")
+     (catch Exception _ false))))
 
 (defmacro with-test-database [data-set & body]
   `(do
-     (~'ensure-test-database)
-     (~data-set)
-     (try
-      ~@body
-      (catch Exception ~'_ false)
-      (finally (~'delete-all-test-data)))))
+     (if (~'ensure-test-database)
+       (do
+         (~data-set)
+         (try
+          ~@body
+          (catch Exception ~'_ false)
+          (finally (~'delete-all-test-data))))
+       (println "!!WARNING!! Not running tests against mysql."))))
 
 (deftest test-query
-  (with-test-database default-test-data
-    #_(is (= (count ($ :album)) 3))
-    #_(let [result ($1 :album {:title "Magic Potion"})]
-      (is (= (:title result) "Magic Potion"))
-      (is (= (-> result meta type-key) :album)))))
+  (binding [*debug* false]
+    (with-test-database default-test-data
+      (are [q f expected] (= (f q) expected)
+           
+           (query db ["select * from album"]) count 3
+           
+           (query db ["select * from album where title = \"Magic Potion\""])
+           #(:title (first %))
+           "Magic Potion"
+
+           (query-1 db ["select * from album where title = \"Magic Potion\""])
+           :title
+           "Magic Potion"
+
+           (query db :album) count 3
+
+           (query db :artist)
+           #(set (map :name %))
+           #{"David Bowie" "The Black Keys"}
+
+           (query db :artist [:name])
+           #(set (map :name %))
+           #{"David Bowie" "The Black Keys"}
+
+           ($ :artist [:name])
+           #(set (map :name %))
+           #{"David Bowie" "The Black Keys"}
+
+           ($ :album) count 3
+
+           ($1 :artist [:name] {:name "David Bowie"})
+           :name
+           "David Bowie"
+
+           ($ :album {:title "Mag*"} {:title "Th*"})
+           #(set (map :title %))
+           #{"Magic Potion" "Thickfreakness"}
+           
+           ;; TODO - Simplify selecting items like this
+           ($ :album :with :artists)
+           #(:name (first (:artists (first (filter (fn [x] (= (:title x) "Magic Potion")) %)))))
+           "The Black Keys"
+
+           ($1 :album {:title "Magic Potion"} :with :artists)
+           #(:name (first (:artists %)))
+           "The Black Keys"
+
+           ($ :artist :with :albums)
+           #(:title (first (:albums (first (filter (fn [x] (= (:name x) "The Black Keys")) %)))))
+           "Magic Potion"
+           
+
+           )
+      
+     (let [result ($1 :album {:title "Magic Potion"})]
+       (is (= (:title result) "Magic Potion"))
+       (is (= (-> result meta type-key) :album))))))
+
+(comment
+  
+  ;; Think about making a way to allow this to work. It will need to
+  ;; get the columns from the database.
+  (def data-model
+       (model
+        (album [many-to-many :artist])
+        (artist)))
+  )
 
