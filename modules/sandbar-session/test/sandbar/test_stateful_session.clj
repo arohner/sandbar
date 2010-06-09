@@ -109,6 +109,10 @@
         (is (= ((wrap-stateful-session*
                  (fn [r] {}))
                 {})
-               {})))))
+               {})))
+     (t "sandbar-sesssion should return nil when the handler returns nil"
+        (is (= ((wrap-stateful-session*
+                 (fn [r] nil)) {:session {}})
+               nil)))))
 
 

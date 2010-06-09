@@ -35,11 +35,12 @@
               session (if sandbar-session
                         (assoc session :sandbar-session sandbar-session)
                         session)]
-          (if (nil? session)
-            (dissoc response :session)
-            (if (empty? session)
-              (merge response {:session nil})
-              (merge response {:session session})))))))
+          (when response
+            (if (nil? session)
+              (dissoc response :session)
+              (if (empty? session)
+                (merge response {:session nil})
+                (merge response {:session session}))))))))
 
 (defn wrap-stateful-session [handler]
   (wrap-session
