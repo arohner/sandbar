@@ -22,7 +22,8 @@
   (fn [request]
     (binding [*sandbar-session* (atom
                                  (-> request :session :sandbar-session))]
-        (let [response (handler request)
+        (let [request (update-in request [:session] dissoc :sandbar-session)
+              response (handler request)
               sandbar-session @*sandbar-session*
               sandbar-session (if (empty? sandbar-session)
                                 nil
@@ -60,6 +61,9 @@
 
 (defn session-delete-key! [k]
   (swap! *sandbar-session* (fn [a b] (dissoc a b)) k))
+
+(defn destroy-session! []
+  (swap! *sandbar-session* (constantly nil)))
 
 (defn set-flash-value! [k v]
   (session-put! k v))
