@@ -6,5 +6,4 @@
                  [sandbar/sandbar-core "0.3.0"]
                  [sandbar/sandbar-session "0.2.3"]]
   :dev-dependencies [[lein-clojars "0.5.0-SNAPSHOT"]
-                     [jline "0.9.94"]]
-  :namespaces [sandbar.auth])
+                     [jline "0.9.94"]])
